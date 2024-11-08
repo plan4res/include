@@ -51,18 +51,22 @@ fi
 # run investment solver
 if [[ "$@" == *"HOTSTART"* ]]; then
     # run in hotstart
-
-    # select which save_state is the most recent
-    if [[ "${INSTANCE}/results_invest/save_state0.nc4" -nt "${INSTANCE}/results_invest/save_state1.nc4" ]]; then
-	saved="${INSTANCE_IN_P4R}/results_invest/save_state0.nc4"
+    if [ -e "save_state0.nc4" ]; then
+    	# select which save_state is the most recent
+    	if [[ "${INSTANCE_IN_P4R}/results_invest/save_state0.nc4" -nt "${INSTANCE}/results_invest/save_state1.nc4" ]]; then
+		saved="${INSTANCE_IN_P4R}/results_invest/save_state0.nc4"
+    	else
+		saved="${INSTANCE_IN_P4R}/results_invest/save_state1.nc4"
+    	fi
+    	echo -e "\n${print_orange} - run CEM using investment_solver:${no_color}${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -b ${saved} -a save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R} -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
+    	time ${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -b ${saved} -a save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4
     else
-	saved="${INSTANCE_IN_P4R}/results_invest/save_state1.nc4"
+        echo -e "\n${print_orange} - run CEM using investment_solver:${no_color}${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -a save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R} -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
+    	time ${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -a save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4
     fi
-    echo -e "\n${print_orange} - run CEM using investment_solver:${no_color}${P4R_ENV} investment_solver -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -b ${saved} -a ${INSTANCE_IN_P4R}/results_invest/save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R} -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
-    time ${P4R_ENV} investment_solver -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -b ${saved} -a ${INSTANCE_IN_P4R}/results_invest/save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4
 else
-     echo -e "\n${print_orange} - run CEM using investment_solver:${no_color}${P4R_ENV} investment_solver -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -a ${INSTANCE_IN_P4R}/results_invest/save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R} -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
-     time ${P4R_ENV} investment_solver -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -a ${INSTANCE_IN_P4R}/results_invest/save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4
+     echo -e "\n${print_orange} - run CEM using investment_solver:${no_color}${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R} -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
+     time ${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4
 fi
 
 for file in $outputs ; do
