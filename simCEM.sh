@@ -1,56 +1,54 @@
 #/bin/bash
 
-if [ ! -d "${INSTANCE}/results_simul" ]; then
-	echo "results_simul dir does not exist; SSV has not ran successfully"
-	exit 1
-fi
+source ${INCLUDE}/sh_utils.sh
 
-# remove previous simulation results
-for file in $outputs ; do
-	if [ -d ${INSTANCE}/results_simul/$file ]; then
-		echo "delete dir ${INSTANCE}/results_simul/${file}"
-		rm -rf ${INSTANCE}/results_simul/${file}
-	fi
-done
-if [ -d ${INSTANCE}/results_simul/MarginalCosts ]; then
-	echo "delete dir ${INSTANCE}/results_simul/MarginalCosts"
-	rm -rf ${INSTANCE}/results_simul/MarginalCosts
-fi
+remove_previous_simulation_results "simul"
+create_results_dir "simul"
 
-if [ -f "${INSTANCE}/results_simul/BellmanValuesOUT.csv" ]; then
-	echo "BellmanValuesOUT.csv found in results_simul/"
-	cp ${INSTANCE}/results_simul/BellmanValuesOUT.csv ${INSTANCE}/results_simul/bellmanvalues.csv
-elif [ -f "${INSTANCE}/results_simul/cuts.txt" ]; then
-	echo "cuts.txt found in results_simul/"
-	cp ${INSTANCE}/results_simul/cuts.txt ${INSTANCE}/results_simul/bellmanvalues.csv
+if check_ssv_output "simul"; then 
+    ssv_output="simul"
+    echo -e "${print_grees}    - Bellman values found in ${INSTANCE}/results_simul$OUT/ .${no_color}" 
 else
-	echo "None of BellmanValuesOUT.csv and cuts.txt is present in results_simul/"
-	echo "SSV has not ran successfully"
-	exit 1
+    if check_ssv_output "optim"; then 
+	ssv_output="optim"
+	copy_ssv_output_from_to "optim" "simul"
+	echo -e "${print_orange}    - No Bellman values found in ${INSTANCE}/results_simul$OUT/ .${no_color}" 
+	echo -e "${print_orange}    - Using Bellman values from ${INSTANCE}/results_optim$OUT/ .${no_color}" 
+    else
+       echo -e "${print_red}    - No Bellman values found in ${INSTANCE}/results_simul$OUT/ nor $INSTANCE}/results_optim$OUT/ .${no_color}" 
+       return 1
+    fi
 fi
 
-# bellman values may have been computed for more ssv timestpeps than required => remove them
-LASTSTEP=$(ls -l ${INSTANCE}/nc4_simul/Block*.nc4 | wc -l)
-awk -F, -v laststep="$LASTSTEP" 'NR==1 || $1 < laststep' "${INSTANCE}/results_simul/bellmanvalues.csv" > "${INSTANCE}/results_simul/temp.csv"
-echo -e "${print_blue} - remove Bellman values after $LASTSTEP steps since they will not be used by the CEM${no_color}\n"
-mv ${INSTANCE}/results_simul/temp.csv ${INSTANCE}/results_simul/bellmanvalues.csv
- 
-for file in $outputs ; do
-	if [ ! -d ${INSTANCE}/results_simul/$file ]; then
-       		mkdir ${INSTANCE}/results_simul/$file
-	fi
-done
+filter_cuts "simul"
 
-if [ ! -d ${INSTANCE}/results_simul/MarginalCosts ]; then
-	mkdir ${INSTANCE}/results_simul/MarginalCosts
+N_PARAL_SIM=$NBSCEN_SIM
+if [ "$NBSCEN_SIM" -gt "$NB_MAX_PARALLEL_SIMUL" ] ; then
+	N_SEQ=$( ceil_division $NBSCEN_SIM $NB_MAX_PARALLEL_SIMUL )
+	N_PARAL_SIM=$(  ceil_division $NBSCEN_SIM $N_SEQ   )
+	echo -e "${print_blue} simulations will be ran in $N_SEQ sequences of $N_PARAL_SIM scenarios ${no_color}"
+fi
+
+if check_param "${CONFIG}/BSPar-Investment.txt" "intMaxThread"; then
+	intMaxThread=$(get_param_value "intMaxThread" "${CONFIG}/BSPar-Investment.txt")
+	if [[ $N_PARAL_SIM -gt $intMaxThread ]]; then
+		replace_param "${CONFIG}/BSPar-Investment.txt" "intMaxThread" "$N_PARAL_SIM"
+		echo -e "${print_blue}    - BSPar-Investment.txt config file : replaced value of intMaxThread: $intMaxThread by $N_PARAL_SIM.${no_color}" 
+	fi
+else
+	increment_int_param_count "${CONFIG}/BSPar-Investment.txt"
+	add_str_param "${CONFIG}/BSPar-Investment.txt" "intMaxThread" "$N_PARAL_SIM"
+	echo -e "${print_blue}    - BSPar-Investment.txt config file : added param intMaxThread: $N_PARAL_SIM .${no_color}" 
 fi
 
 # run investment solver
-#time ${P4R_ENV} investment_solver -d ${INSTANCE_IN_P4R}/results_simul/ -s -l ${INSTANCE_IN_P4R}/results_simul/bellmanvalues.csv -o -S ${CONFIG_IN_P4R}BSPar-Investment.txt -c ${CONFIG_IN_P4R} -p ${INSTANCE_IN_P4R}/nc4_simul/ ${INSTANCE_IN_P4R}/nc4_simul/InvestmentBlock.nc4
-time ${P4R_ENV} investment_solver -d ${INSTANCE_IN_P4R}/results_simul/ -s -l ${INSTANCE_IN_P4R}/results_simul/bellmanvalues.csv -o -S ${CONFIG_IN_P4R}BSPar-Investment.txt -c ${CONFIG_IN_P4R} -p ${INSTANCE_IN_P4R}/nc4_simul/ ${INSTANCE_IN_P4R}/nc4_simul/InvestmentBlock.nc4
+P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${CPUS_PER_NODE} --mpi=pmix -l"
 
-for file in $outputs ; do
-    mv ${INSTANCE}/results_simul/$file*.csv ${INSTANCE}/results_simul/$file/
-done
-mv ${INSTANCE}/results_simul/MarginalCost*.csv ${INSTANCE}/results_simul/MarginalCosts/
-rm uc.lp
+# run investment solver
+echo -e "\n${print_blue}  Run simulation  [$start_time] : ${no_color} ${P4R_ENV} investment_solver -n ${N_PARAL_SIM} -s -d ${INSTANCE_IN_P4R}/results_simul$OUT/ -l ${INSTANCE_IN_P4R}/results_simul$OUT/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ ${INSTANCE_IN_P4R}/nc4_simul/InvestmentBlock.nc4"
+time ${P4R_ENV} investment_solver -n ${N_PARAL_SIM} -s -d ${INSTANCE_IN_P4R}/results_simul$OUT/ -l ${INSTANCE_IN_P4R}/results_simul$OUT/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ ${INSTANCE_IN_P4R}/nc4_simul/InvestmentBlock.nc4
+
+wait
+move_simul_results "simul"
+
+

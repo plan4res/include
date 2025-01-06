@@ -1,61 +1,187 @@
 #/bin/bash
 
-# update sddp_solver configuration file to account for number of scenarios
-echo -e "\n${print_blue} - Update sddp_solver configuration file to account for number of scenarios and location of results${no_color}"
-newNbScen=$NBSCEN_OPT
-rowconfig=$(grep "intNbSimulCheckForConv" ${CONFIG}/sddp_solver.txt)
-intNbSimulCheckForConv=$(echo "$rowconfig" | cut -d ' ' -f 2-)
-oldNbScen="$intNbSimulCheckForConv"								   
-toreplace="$oldNbScen"
-replacement="$newNbScen"
-newrowconfig=${rowconfig/"$toreplace"/"$replacement"}
-sed -i "s/$rowconfig/$newrowconfig/g" "${CONFIG}/sddp_solver.txt"
+source ${INCLUDE}/sh_utils.sh
 
-if grep -q "^strDirOUT" "${CONFIG}/sddp_solver.txt"; then
-    sed -i "s|^strDirOUT.*|strDirOUT ${INSTANCE_IN_P4R}/results_${mode1}/|" "${CONFIG}/sddp_solver.txt"
+create_results_dir "${mode1}"	
+if [ "$HOTSTART" = "" ]; then
+	remove_previous_ssv_results "${mode1}"
+fi
+
+NBTASKS=$NBSCEN_OPT
+if [ "$NBTASKS" -gt "$NB_MAX_PARALLEL_SIMUL" ] ; then
+	NBTASKS=$NB_MAX_PARALLEL_SIMUL
+fi
+NTASKS_PER_NODE=$(ceil_division $NBTASKS $SLURM_JOB_NUM_NODES)  # used only to compute the number of CPUs to request
+N_CPUS_PER_TASK=$((CPUS_PER_NODE / NTASKS_PER_NODE ))
+echo "TOTAL_NB_CPUS=$TOTAL_NB_CPUS; NBTASKS=$NBTASKS; N_CPUS_PER_TASK=$N_CPUS_PER_TASK"
+ 
+if check_param "${CONFIG}/sddp_solver.txt" "strDirOUT"; then
+	replace_param "${CONFIG}/sddp_solver.txt" "strDirOUT" "${INSTANCE}/results_${mode1}$OUT/"
+	echo -e "${print_blue}        - sddp_solver.txt config file : replaced param strDirOUT: ${INSTANCE}/results_${mode1}$OUT/.${no_color}" 
 else
-    rowconfig=$(grep -n "number of string parameters$" "${CONFIG}/sddp_solver.txt" | cut -d: -f1)
-    if [ -n "$rowconfig" ] ; then
-	nbstringparam=$(sed -n "${rowconfig}p" "${CONFIG}/sddp_solver.txt" | awk '{print $1}')
-	newnbstringparam=$((nbstringparam + 1))
-	sed -i "${rowconfig}s/^$nbstringparam/$newnbstringparam/" "${CONFIG}/sddp_solver.txt"
-    fi
-    sed -i "/# now all the string parameters/a strDirOUT ${INSTANCE_IN_P4R}/results_${mode1}/" "${CONFIG}/sddp_solver.txt"
+	increment_str_param_count "${CONFIG}/sddp_solver.txt"
+	add_str_param "${CONFIG}/sddp_solver.txt" "strDirOUT" "${INSTANCE}/results_${mode1}$OUT/"
+	echo -e "${print_blue}        - sddp_solver.txt config file : added param strDirOUT: ${INSTANCE}/results_${mode1}$OUT/.${no_color}" 
 fi
 
-echo -e "${print_blue} - successfully updated sddp_solver.txt configuration file to account for number of scenarios: $oldNbScen, replaced by $newNbScen.${no_color}"
+if check_param "${CONFIG}/sddp_solver.txt" "intNbSimulCheckForConv"; then
+	intNbSimulCheckForConv=$(get_param_value "intNbSimulCheckForConv" "${CONFIG}/sddp_solver.txt")
+	if [[ $intNbSimulCheckForConv -gt $NBSCEN_OPT ]]; then
+		replace_param "${CONFIG}/sddp_solver.txt" "intNbSimulCheckForConv" "$NBSCEN_OPT"
+		echo -e "${print_blue}        - sddp_solver.txt config file : replaced value of intNbSimulCheckForConv by $NBSCEN_OPT.${no_color}" 
+	else
+		echo -e "${print_blue}        - sddp_solver.txt config file : kept value of intNbSimulCheckForConv: $intNbSimulCheckForConv ${no_color}" 
+	fi
+else
+	increment_int_param_count "${CONFIG}/sddp_solver.txt"
+	param_value=$((NBSCEN_OPT / 5))
+	add_int_param "${CONFIG}/sddp_solver.txt" "intNbSimulCheckForConv" "$param_value"
+	echo -e "${print_blue}        - sddp_solver.txt config file : added param intNbSimulCheckForConv: $NBSCEN_OPT.${no_color}" 
+fi
 
-# delete previous results
-if [ -f ${INSTANCE}/results_${mode1}/BellmanValuesOUT.csv ]; then
-	rm ${INSTANCE}/results_${mode1}/BellmanValuesOUT.csv
-fi
-if [ -f ${INSTANCE}/results_${mode1}/BellmanValuesAllOUT.csv ]; then
-	rm ${INSTANCE}/results_${mode1}/BellmanValuesAllOUT.csv
-fi
-if [ -f ${INSTANCE}/results_${mode1}/cuts.txt ]; then
-	rm ${INSTANCE}/results_${mode1}/cuts.txt
-fi
-
-# create repo if it does not exists
-if [ ! -d ${INSTANCE}/results_${mode1} ]; then
-	mkdir ${INSTANCE}/results_${mode1}
+if [[ ! -z "${EpsilonSSV}" ]]; then
+	if check_param "${CONFIG}/sddp_solver.txt" "dblAccuracy"; then
+		replace_param "${CONFIG}/sddp_solver.txt" "dblAccuracy" "$EpsilonSSV"
+		echo -e "${print_blue}        - sddp_solver.txt config file : replaced value of dblAccuracy by $EpsilonSSV.${no_color}" 
+	else
+		increment_dbl_param_count "${CONFIG}/sddp_solver.txt"
+		add_dbl_param "${CONFIG}/sddp_solver.txt" "dblAccuracy" "$EpsilonSSV"
+		echo -e "${print_blue}        - sddp_solver.txt config file : added param dblAccuracy: $EpsilonSSV.${no_color}" 
+	fi
+else
+	EpsilonSSV=$(get_param_value "dblAccuracy" "${CONFIG}/sddp_solver.txt")
 fi
 
 # run sddp solver
-if [[ "$@" == *"HOTSTART"* ]]; then
-	# run in hotstart
-	echo -e "\n${print_blue} - Run SSV with sddp_solver to compute Bellman values for storages: ${no_color}"
+echo -e "\n${print_blue}    - Run SSV [$start_time] with sddp_solver to compute Bellman values for storages: ${no_color}"	
+
+local oldHOTSTART="$HOTSTART"
+if [ ! -f "${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt" ]; then
+	if [ "${HOTSTART}" = "HOTSTART" ]; then
+		echo -e "\n${print_orange}    - HOTSTART requested but not possible as ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt does not exist ${no_color}"
+		oldHOTSTART="HOTSTART"
+		HOTSTART="" 
+	fi
 	
-	echo -e "\n${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}/ -l ${INSTANCE_IN_P4R}/cuts.txt -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4"
-	
-	${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}/ -l ${INSTANCE_IN_P4R}/results_${mode1}/cuts.txt -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4
-else
-	echo -e "\n${print_blue} - Run SSV with sddp_solver to compute Bellman values for storages: ${no_color}"
-	
-	echo -e "\n${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4 "
-	
-	${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4
 fi
 
-rm uc.lp
-sddp_status ./
+P4R_CMD="srun --wckey=${WCKEY} --nodes=${SLURM_JOB_NUM_NODES} --ntasks=${NBTASKS} --distribution=cyclic --cpus-per-task=${N_CPUS_PER_TASK} --mpi=pmix -l"
+if [[ ! $STEPS = 0 ]]; then
+	
+	echo -e "\n${print_blue}    - Run SSV in 2 steps with max $NumberSSVIterationsFirstStep iterations and convergence check each $CheckConvEachXIterInFirstStep iterations in first step  ${no_color}"	
+
+	# first step 
+	############	
+	# update sddp_solver to check convergence only each $ITERCONV iterations
+	if check_param "${CONFIG}/sddp_solver.txt" "intNStepConv"; then
+		replace_param "${CONFIG}/sddp_solver.txt" "intNStepConv" "$ITERCONV"
+		echo -e "${print_blue}        - sddp_solver.txt config file : replaced value of intNStepConv by $ITERCONV.${no_color}" 
+	else
+		increment_int_param_count "${CONFIG}/sddp_solver.txt"
+		add_int_param "${CONFIG}/sddp_solver.txt" "intNStepConv" "$ITERCONV"
+		echo -e "${print_blue}        - sddp_solver.txt config file : added param intNStepConv: $ITERCONV.${no_color}" 
+	fi
+	
+	# update sddp_solver to run max $STEPS iterations
+	if check_param "${CONFIG}/sddp_solver.txt" "intMaxIter"; then
+		intMaxIter=$(get_param_value "intMaxIter" "${CONFIG}/sddp_solver.txt")
+		replace_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "$STEPS"
+		echo -e "${print_blue}        - sddp_solver.txt config file : replaced value of intMaxIter by $STEPS.${no_color}" 
+	else
+		increment_int_param_count "${CONFIG}/sddp_solver.txt"
+		add_int_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "$STEPS"
+		echo -e "${print_blue}        - sddp_solver.txt config file : added param intMaxIter: $STEPS.${no_color}" 
+	fi
+	
+	# run first step of sddp
+	# hotstart run is possible in 2 steps mode
+	if [ ! "$HOTSTART" = "" ]; then
+		# run in hotstart
+		echo -e "${print_blue}\n    - Running in HOTSTART mode using /results_${mode1}$OUT/cuts.txt${no_color}"
+		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}$OUT/ssv_out.txt
+		wait
+		SSV_OUTPUT=$(grep "ACCURACY" "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt" | awk '{print $2}' | tail -n 1)
+	else	
+		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}$OUT/ssv_out.txt
+		wait
+		SSV_OUTPUT=$(grep "ACCURACY" "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt" | awk '{print $2}' | tail -n 1)
+	fi
+	SSV_OUTPUT=$(printf "%.20f\n" "$SSV_OUTPUT")
+	if [[ ${SSV_OUTPUT} < $EpsilonSSV ]]; then
+		echo -e "${print_green}        - SSV reached optimality, no need for second step.${no_color}" 
+	else
+		# second step 
+		############	
+		if [[ ! -z "${CheckConvEachXIter}" ]]; then
+			replace_param "${CONFIG}/sddp_solver.txt" "intNStepConv" "$CheckConvEachXIter"
+			echo -e "${print_blue}        - sddp_solver.txt config file : replaced value of intNStepConv by $CheckConvEachXIter.${no_color}" 
+		else
+			replace_param "${CONFIG}/sddp_solver.txt" "intNStepConv" "1"
+			echo -e "${print_blue}        - sddp_solver.txt config file : replaced value of intNStepConv by 1.${no_color}" 
+		fi
+		
+		if [[ ! -z "${NumberSSVIterations}" ]]; then
+			replace_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "$NumberSSVIterations"
+			echo -e "${print_blue}        - updated sddp_solver.txt config file : replaced value of intMaxIter by $NumberSSVIterations.${no_color}" 
+		elif [[ ! -z "${intMaxIter}" ]]; then
+			replace_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "$intMaxIter"
+			echo -e "${print_blue}        - successfully updated sddp_solver.txt config file : replaced value of intMaxIter by $intMaxIter.${no_color}" 
+		else
+			replace_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "500"
+			echo -e "${print_blue}        - successfully updated sddp_solver.txt config file : replaced value of intMaxIter by 500.${no_color}" 
+		fi
+		
+		# run second step of sddp in hotstart mode
+		if [ -f "${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt" ]; then
+			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4"      
+			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4
+		else
+			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4"      
+			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4
+		fi
+	fi
+else	
+	# update number max of iterations	
+	if check_param "${CONFIG}/sddp_solver.txt" "intMaxIter"; then
+		intMaxIter=$(get_param_value "intMaxIter" "${CONFIG}/sddp_solver.txt")
+		if [[ ! -z "${NumberSSVIterations}" ]]; then
+			replace_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "$NumberSSVIterations"
+			echo -e "${print_blue}        - updated sddp_solver.txt config file : replaced value of intMaxIter by $NumberSSVIterations.${no_color}" 
+		fi
+	elif [[ ! -z "${NumberSSVIterations}" ]]; then
+		increment_int_param_count "${CONFIG}/sddp_solver.txt"		
+		add_int_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "$NumberSSVIterations"
+		echo -e "${print_blue}        - updated sddp_solver.txt config file : added intMaxIter: $NumberSSVIterations.${no_color}" 
+	else
+		increment_int_param_count "${CONFIG}/sddp_solver.txt"		
+		add_int_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "500"
+		echo -e "${print_blue}        - updated sddp_solver.txt config file : added intMaxIter: 500.${no_color}" 
+	fi
+
+	# update test convergence each X iteration	
+	if check_param "${CONFIG}/sddp_solver.txt" "intNStepConv"; then
+		intNStepConv=$(get_param_value "intNStepConv" "${CONFIG}/sddp_solver.txt")
+		if [[ ! -z "${CheckConvEachXIter}" ]]; then
+			replace_param "${CONFIG}/sddp_solver.txt" "intNStepConv" "$CheckConvEachXIter"
+			echo -e "${print_blue}        - updated sddp_solver.txt config file : replaced value of intNStepConv by $CheckConvEachXIter.${no_color}" 
+		fi
+	elif [[ ! -z "${CheckConvEachXIter}" ]]; then
+		increment_int_param_count "${CONFIG}/sddp_solver.txt"		
+		add_int_param "${CONFIG}/sddp_solver.txt" "intNStepConv" "$CheckConvEachXIter"
+		echo -e "${print_blue}        - updated sddp_solver.txt config file : added intNStepConv: $CheckConvEachXIter.${no_color}" 
+	else
+		increment_int_param_count "${CONFIG}/sddp_solver.txt"
+		add_int_param "${CONFIG}/sddp_solver.txt" "intNStepConv" "1"
+		echo -e "${print_blue}        - updated sddp_solver.txt config file : added intNStepConv: 1.${no_color}" 
+	fi	
+
+
+	if [ "$HOTSTART" = "HOTSTART" ]; then
+		# run in hotstart
+		echo -e "${print_blue}\n    - Running in HOTSTART mode using /results_${mode1}$OUT/cuts.txt ${no_color}"
+		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4
+	else
+		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4
+	fi
+fi
+HOTSTART="$oldHOTSTART"

@@ -1,78 +1,83 @@
 #/bin/bash
 
-if [ ! -d "${INSTANCE}/results_invest" ]; then
-	echo "results_invest dir does not exist; SSV has not ran successfully"
-	exit 1
-fi
+source ${INCLUDE}/sh_utils.sh
 
-# remove previous  results
-for file in $outputs ; do
-	if [ -d ${INSTANCE}/results_invest/$file ]; then
-		rm -rf ${INSTANCE}/results_invest/${file}
-	fi
-done
-if [ -d ${INSTANCE}/results_invest/MarginalCosts ]; then
-	rm -rf ${INSTANCE}/results_invest/MarginalCosts
-fi
-if [ -f ${INSTANCE}/results_invest/Solution_OUT.csv ]; then
-	rm ${INSTANCE}/results_invest/Solution_OUT.csv
-fi
-
-if [ -f ${INSTANCE}/results_invest/BellmanValuesOUT.csv ]; then
-	echo "BellmanValuesOUT.csv found in results_invest/"
-	cp ${INSTANCE}/results_invest/BellmanValuesOUT.csv ${INSTANCE}/results_invest/bellmanvalues.csv
-elif [ -f ${INSTANCE}/results_invest/cuts.txt ]; then
-	echo "cuts.txt found in results_invest/"
-	cp ${INSTANCE}/results_invest/cuts.txt ${INSTANCE}/results_invest/bellmanvalues.csv
+if ! check_results_dir "$mode1"; then return 1;  fi
+remove_previous_simulation_results "invest"
+if check_ssv_output "invest"; then 
+	ssv_output="invest"
 else
-	echo "None of ${INSTANCE}/results_invest/BellmanValuesOUT.csv and ${INSTANCE}/results_invest/cuts.txt is present in results_invest/"
-	echo "SSV has not ran successfully"
-	exit 1
+	if check_ssv_output "optim"; then 
+		ssv_output="optim"
+		copy_ssv_output_from_to "optim" "invest"
+		echo -e "${print_orange}        - No Bellman values found in ${INSTANCE}/results_invest$OUT/ .${no_color}" 
+		echo -e "${print_orange}        - Using Bellman values from ${INSTANCE}/results_optim$OUT/ .${no_color}" 
+	else
+		return 1
+	fi
+fi
+filter_cuts "invest"
+create_results_dir "invest"
+
+N_PARAL_CEM=$NBSCEN_CEM
+if [ "$NBSCEN_CEM" -gt "$NB_MAX_PARALLEL_SIMUL" ] ; then
+	N_SEQ=$( ceil_division $NBSCEN_CEM $NB_MAX_PARALLEL_SIMUL )
+	N_PARAL_CEM=$(  ceil_division $NBSCEN_CEM $N_SEQ   )
+	echo -e "        - ${print_blue}simulations will be ran in $N_SEQ sequences of $N_PARAL_CEM scenarios ${no_color}"
 fi
 
-# bellman values may have been computed for more ssv timestpeps than required => remove them
-LASTSTEP=$(ls -l ${INSTANCE}/nc4_invest/Block*.nc4 | wc -l)
-echo $LASTSTEP
-awk -F, -v laststep="$LASTSTEP" 'NR==1 || $1 < laststep' "${INSTANCE}/results_invest/bellmanvalues.csv" > "${INSTANCE}/results_invest/temp.csv"
-
-echo -e "${print_blue} - remove Bellman values after $LASTSTEP steps since they will not be used by the CEM${no_color}\n"
-cp ${INSTANCE}/results_invest/temp.csv ${INSTANCE}/results_invest/bellmanvalues.csv
- 
-for file in $outputs ; do
-	if [ ! -d ${INSTANCE}/results_invest/$file ]; then
-       		mkdir ${INSTANCE}/results_invest/$file
+if check_param "${CONFIG}/BSPar-Investment.txt" "intMaxThread"; then
+	intMaxThread=$(get_param_value "intMaxThread" "${CONFIG}/BSPar-Investment.txt")
+	if [[ $N_PARAL_CEM -gt $intMaxThread ]]; then
+		replace_param "${CONFIG}/BSPar-Investment.txt" "intMaxThread" "$N_PARAL_CEM"
+		echo -e "${print_blue}        - BSPar-Investment.txt config file : replaced value of intMaxThread: $intMaxThread by $N_PARAL_CEM.${no_color}" 
 	fi
-done
-
-if [ ! -d ${INSTANCE}/results_invest/MarginalCosts ]; then
-	mkdir ${INSTANCE}/results_invest/MarginalCosts
+else
+	increment_int_param_count "${CONFIG}/BSPar-Investment.txt"
+	add_str_param "${CONFIG}/BSPar-Investment.txt" "intMaxThread" "$N_PARAL_CEM"
+	echo -e "${print_blue}        - BSPar-Investment.txt config file : added param intMaxThread: $N_PARAL_CEM .${no_color}" 
 fi
 
 # run investment solver
-if [[ "$@" == *"HOTSTART"* ]]; then
+P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${CPUS_PER_NODE} --mpi=pmix -l"
+if [[ "$HOTSTART" == *"save"* ]]; then  
     # run in hotstart
-    if [ -e "save_state0.nc4" ]; then
-    	# select which save_state is the most recent
-    	if [[ "${INSTANCE_IN_P4R}/results_invest/save_state0.nc4" -nt "${INSTANCE}/results_invest/save_state1.nc4" ]]; then
-		saved="${INSTANCE_IN_P4R}/results_invest/save_state0.nc4"
-    	else
-		saved="${INSTANCE_IN_P4R}/results_invest/save_state1.nc4"
-    	fi
-    	echo -e "\n${print_orange} - run CEM using investment_solver:${no_color}${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -b ${saved} -a save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R} -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
-    	time ${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -b ${saved} -a save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4
+    # select which save_state is the most recent
+    if [[ "${INSTANCE_IN_P4R}/results_invest$OUT/save_state0.nc4" -nt "${INSTANCE_IN_P4R}/results_invest$OUT/save_state1.nc4" ]]; then
+		saved="${INSTANCE_IN_P4R}/results_invest$OUT/save_state0.nc4"
     else
-        echo -e "\n${print_orange} - run CEM using investment_solver:${no_color}${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -a save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R} -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
-    	time ${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -a save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4
+		saved="${INSTANCE_IN_P4R}/results_invest$OUT/save_state1.nc4"
     fi
+    echo -e "${print_blue}        - run in HOTSTART mode (with state saving)${no_color}"
+	if [ -f "${INSTANCE}/results_invest$OUT/Solution_OUT.csv" ]; then
+		echo -e "\n${print_green}        - run CEM [$start_time] using investment_solver:${no_color}${P4R_ENV} investment_solver -n ${N_PARAL_CEM} -x ${INSTANCE_IN_P4R}/results_invest$OUT/Solution_OUT.csv -d ${INSTANCE_IN_P4R}/results_invest$OUT/ -l ${INSTANCE_IN_P4R}/results_invest$OUT/bellmanvalues.csv -b ${saved} -a ${INSTANCE_IN_P4R}/results_invest$OUT/save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
+		time ${P4R_ENV} investment_solver -n ${N_PARAL_CEM} -x ${INSTANCE_IN_P4R}/results_invest$OUT/Solution_OUT.csv -d ${INSTANCE_IN_P4R}/results_invest$OUT/ -l ${INSTANCE_IN_P4R}/results_invest$OUT/bellmanvalues.csv -b ${saved} -a ${INSTANCE_IN_P4R}/results_invest$OUT/save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4 | tee ${INSTANCE}/results_invest$OUT/invest_out.txt
+	else
+		echo -e "\n${print_green}        - run CEM [$start_time] using investment_solver:${no_color}${P4R_ENV} investment_solver -n ${N_PARAL_CEM} -d ${INSTANCE_IN_P4R}/results_invest$OUT/ -l ${INSTANCE_IN_P4R}/results_invest$OUT/bellmanvalues.csv -b ${saved} -a ${INSTANCE_IN_P4R}/results_invest$OUT/save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
+		time ${P4R_ENV} investment_solver -n ${N_PARAL_CEM} -d ${INSTANCE_IN_P4R}/results_invest$OUT/ -l ${INSTANCE_IN_P4R}/results_invest$OUT/bellmanvalues.csv -b ${saved} -a ${INSTANCE_IN_P4R}/results_invest$OUT/save_state -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4 | tee ${INSTANCE}/results_invest$OUT/invest_out.txt
+	fi
+elif [[ "$HOTSTART" == *"HOTSTART"* ]]; then
+	echo -e "\n${print_blue}        - run in HOTSTART mode ${no_color}"
+	if [ -f "${INSTANCE}/results_invest$OUT/Solution_OUT.csv" ]; then
+		echo -e "\n${print_green}        - run CEM [$start_time] using investment_solver:${no_color}${P4R_ENV} investment_solver -n ${N_PARAL_CEM} -x ${INSTANCE_IN_P4R}/results_invest$OUT/Solution_OUT.csv -d ${INSTANCE_IN_P4R}/results_invest$OUT/ -l ${INSTANCE_IN_P4R}/results_invest$OUT/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
+		time ${P4R_ENV} investment_solver -n ${N_PARAL_CEM} -x ${INSTANCE_IN_P4R}/results_invest$OUT/Solution_OUT.csv -d ${INSTANCE_IN_P4R}/results_invest$OUT/ -l ${INSTANCE_IN_P4R}/results_invest$OUT/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4 | tee ${INSTANCE}/results_invest$OUT/invest_out.txt
+	else
+		echo -e "\n${print_orange}        - File ${INSTANCE}/results_invest$OUT/Solution_OUT.csv not found  "
+		echo -e "\n${print_orange}        - run without hotstart  "
+		echo -e "\n${print_green}        - run CEM [$start_time] using investment_solver:${no_color} ${P4R_ENV} investment_solver -n ${N_PARAL_CEM} -d ${INSTANCE_IN_P4R}/results_invest$OUT/ -l ${INSTANCE_IN_P4R}/results_invest$OUT/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
+		time ${P4R_ENV} investment_solver -n ${N_PARAL_CEM} -d ${INSTANCE_IN_P4R}/results_invest$OUT/ -l ${INSTANCE_IN_P4R}/results_invest$OUT/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4 | tee ${INSTANCE}/results_invest$OUT/invest_out.txt
+	fi
 else
-     echo -e "\n${print_orange} - run CEM using investment_solver:${no_color}${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R} -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
-     time ${P4R_ENV} investment_solver -n ${SLURM_NTASKS} -d ${INSTANCE_IN_P4R}/results_invest/ -l ${INSTANCE_IN_P4R}/results_invest/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4
+	echo -e "\n${print_blue}        - run CEM without hotstart ${no_color}"
+    if [ "$LOOPCEM" = "" ]; then	
+		remove_previous_investment_results
+	fi
+    echo -e "\n${print_green}        - run CEM [$start_time] using investment_solver:${no_color}${P4R_ENV} investment_solver -n ${N_PARAL_CEM} -d ${INSTANCE_IN_P4R}/results_invest$OUT/ -l ${INSTANCE_IN_P4R}/results_invest$OUT/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4"
+    time ${P4R_ENV} investment_solver -n ${N_PARAL_CEM} -d ${INSTANCE_IN_P4R}/results_invest$OUT/ -l ${INSTANCE_IN_P4R}/results_invest$OUT/bellmanvalues.csv -o -e -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_invest/ ${INSTANCE_IN_P4R}/nc4_invest/InvestmentBlock.nc4  | tee ${INSTANCE}/results_invest$OUT/invest_out.txt
 fi
-
-for file in $outputs ; do
-    mv ${INSTANCE}/results_invest/$file*.csv ${INSTANCE}/results_invest/$file/
-done
-mv ${INSTANCE}/results_invest/MarginalCost*.csv ${INSTANCE}/results_invest/MarginalCosts/
-
-rm uc.lp
-invest_status ./
+wait
+invest_output=$(cat "${INSTANCE}/results_invest$OUT/invest_out.txt")
+INVEST_OUTPUT="$invest_output"
+echo -e "\n${print_green}        - CEM ended [$start_time] ${no_color}"
+move_simul_results "invest"
+if ! investment_status; then return 1;fi
