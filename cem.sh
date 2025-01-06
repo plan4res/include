@@ -2,7 +2,7 @@
 
 source ${INCLUDE}/sh_utils.sh
 
-if ! check_results_dir "$mode1"; then return 1;  fi
+if ! check_results_dir "$mode1"; then create_results_dir;  fi
 remove_previous_simulation_results "invest"
 if check_ssv_output "invest"; then 
 	ssv_output="invest"
