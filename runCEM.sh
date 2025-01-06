@@ -79,6 +79,12 @@ else
 		let "NbCommas=$StrNbCommas"
 		NBSCEN_CEM=`expr $NbCommas + 1`
 		echo -e "\n${print_blue} - with $NBSCEN_CEM scenarios ${no_color}"
+
+  		if [ $it_scen -gt 1 ]; then
+			# run in hotstart
+			if [ $HOTSTART="" ]; then HOTSTART="HOTSTART" ; fi
+		fi
+  
 		if [ "$LOOPCEM" = "LOOPCEM" ]; then
 			index_scen=$it_scen
 			# run investment solver with cem/ssv loop
