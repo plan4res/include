@@ -550,18 +550,17 @@ function copy_ssv_output_from_to() {
 		echo -e "${print_blue}        - BellmanValuesOUT.csv found in results_$from$OUT/ ${no_color}"
 		echo -e "${print_blue}        - copying to ${INSTANCE}/results_$to$OUT ${no_color}"
 		cp ${INSTANCE}/results_$from$OUT/BellmanValuesOUT.csv ${INSTANCE}/results_$to$OUT/BellmanValuesOUT.csv
-	fi
-	if [ -f "${INSTANCE}/results_$from$OUT/cuts.txt" ]; then
+		cp ${INSTANCE}/results_$from$OUT/BellmanValuesOUT.csv ${INSTANCE}/results_$to$OUT/bellmanvalues.csv
+		return 0
+	elif [ -f "${INSTANCE}/results_$from$OUT/cuts.txt" ]; then
 		echo -e "${print_blue}        - cuts.txt found in results_$from$OUT/ ${no_color}"
 		echo -e "${print_blue}        - copying to ${INSTANCE}/results_$to$OUT ${no_color}"
-		cp ${INSTANCE}/results_$from$OUT/cuts.txt ${INSTANCE}/results_$to$OUT/BellmanValuesOUT.csv
-	fi
-	if [[ ! -f "${INSTANCE}/results_$from$OUT/BellmanValuesOUT.csv" && ! -f "${INSTANCE}/results_$from$OUT/cuts.txt" ]]; then
-		echo -e "${print_red} - None of BellmanValuesOUT.csv and cuts.txt is present in results_$from$OUT/ ${no_color}"
-		echo -e "${print_red} - SSV has not ran successfully ${no_color}"
-		return 1
-	else
+		cp ${INSTANCE}/results_$from$OUT/cuts.txt ${INSTANCE}/results_$to$OUT/cuts.txt
+		cp ${INSTANCE}/results_$from$OUT/cuts.txt ${INSTANCE}/bellmanvalues.csv
 		return 0
+	else		
+		echo -e "${print_red} - None of BellmanValuesOUT.csv and cuts.txt is present in results_$from$OUT/ ${no_color}"
+		return 1
 	fi	
 }
 
