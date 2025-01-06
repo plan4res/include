@@ -24,9 +24,10 @@ echo "Total Number CPUs : $TOTAL_NB_CPUS"
 NB_MAX_PARALLEL_SIMUL=$CPUS_PER_NODE
 echo "The total number of CPUs available is $TOTAL_NB_CPUS"
 
-WHERE_IS_SCRIPT=$(dirname "$(readlink -f "$0")") # frome where script is called...
+WHERE_IS_SCRIPT=$1
+shift
 if [[ ! -n "$P4R_DIR" ]]; then
-    P4R_DIR=$(echo "$WHERE_IS_SCRIPT" | sed 's#/scripts/include##')
+    P4R_DIR=$WHERE_IS_SCRIPT
 fi
     
 if [ -n "$P4R_DIR_LOCAL" ]; then
