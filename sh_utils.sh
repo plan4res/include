@@ -545,12 +545,15 @@ function update_scenarios() {
 function copy_ssv_output_from_to() {
 	from=$1
 	to=$2
+	if [[ ! -d ${INSTANCE}/results_$to$OUT ]]; then mkdir ${INSTANCE}/results_$to$OUT ; fi
 	if [ -f "${INSTANCE}/results_$from$OUT/BellmanValuesOUT.csv" ]; then
 		echo -e "${print_blue}        - BellmanValuesOUT.csv found in results_$from$OUT/ ${no_color}"
+		echo -e "${print_blue}        - copying to ${INSTANCE}/results_$to$OUT ${no_color}"
 		cp ${INSTANCE}/results_$from$OUT/BellmanValuesOUT.csv ${INSTANCE}/results_$to$OUT/BellmanValuesOUT.csv
 	fi
 	if [ -f "${INSTANCE}/results_$from$OUT/cuts.txt" ]; then
 		echo -e "${print_blue}        - cuts.txt found in results_$from$OUT/ ${no_color}"
+		echo -e "${print_blue}        - copying to ${INSTANCE}/results_$to$OUT ${no_color}"
 		cp ${INSTANCE}/results_$from$OUT/cuts.txt ${INSTANCE}/results_$to$OUT/BellmanValuesOUT.csv
 	fi
 	if [[ ! -f "${INSTANCE}/results_$from$OUT/BellmanValuesOUT.csv" && ! -f "${INSTANCE}/results_$from$OUT/cuts.txt" ]]; then
@@ -559,8 +562,7 @@ function copy_ssv_output_from_to() {
 		return 1
 	else
 		return 0
-	fi
-	
+	fi	
 }
 
 function test_fill_option() {
