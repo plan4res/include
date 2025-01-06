@@ -130,7 +130,6 @@ function check_ssv_output() {
 		return 0
 	else
 		echo -e "${print_red}            - None of BellmanValuesOUT.csv and cuts.txt is present in results_$mode$OUT/ ${no_color}\n"
-		echo -e "${print_red}            - SSV has not ran successfully ${no_color}\n"
 		return 1
 	fi
 }
