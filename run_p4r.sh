@@ -8,9 +8,6 @@ echo "=================================================="
 
 echo "plan4res launched with arguments : $@"
 
-source ${INCLUDE}/sh_utils.sh
-source ${INCLUDE}/main_functions.sh
-
 # if script launched without SLURM, fill SLURM variables with 1
 if [[ ! -n "$SLURM_JOB_ID" ]]; then
   SLURM_JOB_NUM_NODES=1
@@ -56,6 +53,9 @@ print_red='\033[0;31m'
 print_green='\033[0;32m'
 print_orange='\033[0;33m'
 print_blue='\033[0;34m'
+
+source ${INCLUDE}/sh_utils.sh
+source ${INCLUDE}/main_functions.sh
 
 # function to get the full path
 no_symlinks='on'
