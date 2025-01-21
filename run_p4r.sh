@@ -109,6 +109,7 @@ index_check_distance=2
 cem_config_file=""
 LOOPCEM=""
 maxnumberloops=10
+block_id=0
 
 shift 2
 
