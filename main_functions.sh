@@ -42,6 +42,12 @@ function read_options() {
 				if [ $test -eq 0 ]; then mode2="$2" ; shift; fi
 				shift
 				;;
+			-B|--block) 				
+				test_option $1 $2
+				test=$?
+				if [ $test -eq 0 ]; then block_id="$2" ; shift; fi
+				shift
+				;;
         	-o|--out) 				
 				test_option $1 $2
 				test=$?
@@ -249,6 +255,11 @@ function test_run_argument() {
 			mode1="invest"
 			simulation_status
 			;;
+		SIMBLOCK)
+			echo -e "\n${print_green}Launching simulation for 1 block- [$start_time]${no_color}"
+			if [ "$mode1" = "" ]; then mode1="simul" ; fi
+			source ${INCLUDE}/blocksolver.sh 
+			;;
 	    SIM)
 			mode1="simul"
 			mode2="simul"
@@ -259,6 +270,19 @@ function test_run_argument() {
 			fi
 			echo -e "\n${print_green}Launching simulation with SIM - [$start_time]${no_color}"
 			source ${INCLUDE}/simCEM.sh
+			wait
+			simulation_status
+			;;
+		SIMsddp)
+			mode1="simul"
+			mode2="simul"
+			if [ "$FORMAT" = "FORMAT" ]; then
+				echo -e "\n${print_green}Launching plan4res dataset formatting for $DATASET - [$start_time]${no_color}"
+				source ${INCLUDE}/format.sh 
+				if ! format_status; then return 1; fi	
+			fi
+			echo -e "\n${print_green}Launching simulation with SIM - [$start_time]${no_color}"
+			source ${INCLUDE}/sim.sh
 			wait
 			simulation_status
 			;;
@@ -444,4 +468,3 @@ function show_help() {
     echo "Options:"
     echo "  -h, --help  Display this help and exit"
 }
-
