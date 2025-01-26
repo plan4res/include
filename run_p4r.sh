@@ -42,7 +42,7 @@ echo "Local plan4res repo : $LOCAL_P4R_DIR"
 P4R_ENV="$P4R_DIR/bin/p4r"
 PYTHONSCRIPTS="${P4R_DIR}/scripts/python/plan4res-scripts"
 INCLUDE="$P4R_DIR/scripts/include"
-DATA="${LOCAL_P4R_DIR}/data/local"
+DATA="${LOCAL_P4R_DIR}/data"
 
 inputs="TU_ThermalUnits IN_Interconnections RES_RenewableUnits STS_ShortTermStorage"
 outputs="Demand Volume Flows ActivePower MaxPower Primary Secondary"
