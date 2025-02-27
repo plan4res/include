@@ -13,6 +13,8 @@ if [ "${mode1}" = "simul" ] || [ "${mode1}" = "invest" ]; then
 		cp ${INSTANCE}/results_${mode1}$OUT/bellmanvalues.csv ${INSTANCE}/csv_${mode1}/
 	elif check_ssv_output "optim"; then 
 		cp ${INSTANCE}/results_optim$OUT/bellmanvalues.csv ${INSTANCE}/csv_${mode1}/
+	elif check_ssv_output "simul"; then 
+		cp ${INSTANCE}/results_simul$OUT/bellmanvalues.csv ${INSTANCE}/csv_${mode1}/
 	fi
 fi
 # run formatting script to create netcdf input files for running the cem
