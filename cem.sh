@@ -13,7 +13,14 @@ else
 		echo -e "${print_orange}        - No Bellman values found in ${INSTANCE}/results_invest$OUT/ .${no_color}" 
 		echo -e "${print_orange}        - Using Bellman values from ${INSTANCE}/results_optim$OUT/ .${no_color}" 
 	else
-		return 1
+		if check_ssv_output "simul"; then 
+			ssv_output="simul"
+			copy_ssv_output_from_to "simul" "invest"
+			echo -e "${print_orange}        - No Bellman values found in ${INSTANCE}/results_invest$OUT/ .${no_color}" 
+			echo -e "${print_orange}        - Using Bellman values from ${INSTANCE}/results_simul$OUT/ .${no_color}" 
+		else
+			return 1
+		fi
 	fi
 fi
 filter_cuts "invest"

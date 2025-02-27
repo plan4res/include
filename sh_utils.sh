@@ -411,6 +411,37 @@ function replace_param() {
 	sed -i "s/^${name//\//\\/}.*/$name $escaped_value/" "$file"
 }
 
+function get_solver() {
+	local file="$1"
+    local found_block_solver_config=false
+    local line_number=0
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Ignore lines starting by # and empty lines
+        if [[ "$line" =~ ^# ]] || [[ -z "$line" ]]; then
+            continue
+        fi
+
+        # Check if line starts with BlockSolverConfig
+        if [[ "$line" =~ ^BlockSolverConfig ]]; then
+            found_block_solver_config=true
+            line_number=0
+            continue
+        fi
+
+        # If BlockSolverConfig awas found, count following active lines, gets solver name on 3rd line
+        if $found_block_solver_config; then
+            ((line_number++))
+            if [[ $line_number -eq 3 ]]; then
+                solver_name=$(echo "$line" | awk -F'#' '{print $1}' | xargs)
+                echo "$solver_name"
+                return
+            fi
+        fi
+    done < "$file"
+	
+}
+
 # gets the value of parameter $2 in sms++ config file $1
 function get_param_value() {
     local param="$1"
