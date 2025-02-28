@@ -9,7 +9,7 @@
 hostname
 
 module load openmpi/4.1.6
-export SINGULARITY_BIND="/efs/software/plan4res,/efs/users/sandrine.charousset"
+export SINGULARITY_BIND="$P4R_DIR,$P4R_DIR_LOCAL"
 export SINGULARITYENV_LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}
 export P4R_SINGULARITY_IMAGE_PRESERVE=1 # avoid update of the container
 P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 --mpi=pmix -l"
