@@ -113,7 +113,6 @@ block_id=0
 
 shift 2
 
-read_settings
 read_options $@
 result=$?
 if [ $result -eq 1 ]; then
@@ -132,6 +131,8 @@ echo -e "\tDATA          = ${DATA}"
 INSTANCE="${DATA}/${DATASET}"
 CONFIG="${DATA}/${DATASET}/settings"
 echo -e "Configuration files in: ${CONFIG}"
+read_settings
+
 echo "The maximum number of simulations in parallel is $NB_MAX_PARALLEL_SIMUL"
 
 vagrant_cwd_file=.vagrant/machines/default/virtualbox/vagrant_cwd
