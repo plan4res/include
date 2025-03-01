@@ -4,7 +4,8 @@
 source ${INCLUDE}/sh_utils.sh
 
 function read_settings() {
-    
+
+    main_config_file="${CONFIG}/plan4res_settings.yml"
     echo "read configuration file in $main_config_file"
 
     while IFS=: read -r var_name var_value; do
