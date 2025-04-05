@@ -1,6 +1,6 @@
 #/bin/bash
 
-main_config_file="$P4R_DIR_LOCAL/data/local/${DATASET}/settings/plan4res_settings.yml"
+main_config_file="$P4R_DIR_LOCAL/data/${DATASET}/settings/plan4res_settings.yml"
 function check_results_dir() {
 	local repo=$1
 	echo -e "${print_blue}        - check if repo ${INSTANCE}/results_${repo}${OUT} exists${no_color}\n"
