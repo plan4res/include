@@ -233,6 +233,26 @@ function create_status {
 	fi
 }
 
+function linkgenesys_status {
+	missing_files=()
+	
+	# Check outputs of linkgenesys
+	file="${INSTANCE}/IAMC/${DATASET}.xlsx"
+	if [[ ! -f "$file" ]]; then
+		missing_files+=(${file})
+	fi
+
+	if [ ${#missing_files[@]} -eq 0 ]; then
+		echo -e "${print_green}$(date +'%m/%d/%Y %H:%M:%S') - successfully ran LINKGENESYS. ${no_color}"
+    	echo -e "${print_green} results available in ${INSTANCE}/IAMC${no_color}"
+		return 0
+	else
+		echo -e "${print_red}$(date +'%m/%d/%Y %H:%M:%S') - error while running LINKGENESYS ${missing_files[@]}.${no_color}"
+		return 1
+	fi
+}
+
+
 function format_status {
 	missing_files=()
 		

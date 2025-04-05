@@ -15,6 +15,12 @@ remove_previous_simulation_results "invest"
 
 # run script to create plan4res input dataset (ZV_ZineValues.csv ...)
 # comment if you are using handmade datasets
+if [ "$LINKGENESYS" = "LINKGENESYS" ]; then
+	echo -e "\n${print_green}Launching IAMC dataset creation for $DATASET - [$start_time]${no_color}"
+	source ${INCLUDE}/runLINK_GENESYS.sh 
+	if ! linkgenesys_status; then return 1; fi			
+fi
+
 if [ "$CREATE" = "CREATE" ]; then
 	mode1="invest"
 	echo -e "\n${print_blue}    Step 1 - Create plan4res input files ${no_color}"

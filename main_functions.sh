@@ -73,6 +73,7 @@ function read_options() {
 				fi 
 				;;
         	-C|--create) CREATE="CREATE"; echo "csv dataset will be created before running ${runtype}"; shift ;;
+        	-G|--linkgenesys) LINKGENESYS="LINKGENESYS"; echo "IAMC files from GENeSYS-MOD native inputs/outputs will be created before running ${runtype}"; shift ;;
         	-F|--format) FORMAT="FORMAT"; echo "nc4 dataset will be created before running ${runtype}" ; shift ;;
         	-S|--steps) 
 				test_fill_option "NumberSSVIterationsFirstStep" "$1" "$2"
@@ -206,6 +207,11 @@ function test_run_argument() {
 			source ${INCLUDE}/create.sh 
 			create_status
 			;;
+		LINKGENESYS)
+			echo -e "\n${print_green}Launching IAMC dataset creation for $DATASET - [$start_time]${no_color}"
+			source ${INCLUDE}/runLINK_GENESYS.sh 
+			linkgenesys_status
+			;;
 		POSTTREAT)
 			if [ "$mode1" = "" ]; then
 				mode1="simul"
@@ -228,6 +234,11 @@ function test_run_argument() {
 			if [[ "$mode1" != "" && "$mode1" != "simul" && "$mode1" != "invest" && "$mode1" != "optim" ]]; then        	    		echo -e "${print_red}Usage: $0 runtype [dataset] -M [option1] optionnal: -o [Dir] -H -S${no_color}"
 				echo -e "${print_red}[option1] must be simul or invest${no_color}"
 		    	return 1			
+			fi
+			if [ "$LINKGENESYS" = "LINKGENESYS" ]; then
+				echo -e "\n${print_green}Launching IAMC dataset creation for $DATASET - [$start_time]${no_color}"
+				source ${INCLUDE}/runLINK_GENESYS.sh 
+				if ! linkgenesys_status; then return 1; fi			
 			fi
 			if [ "$CREATE" = "CREATE" ]; then
 				echo -e "\n${print_green}Launching plan4res dataset creation for $DATASET - [$start_time]${no_color}"
@@ -322,6 +333,11 @@ function test_run_argument() {
 		    	echo -e "\n${print_red}option1 must be 'optim', 'simul', 'invest' or 'postinvest'${no_color}"
 		    	return 1
 			fi
+			if [ "$LINKGENESYS" = "LINKGENESYS" ]; then
+				echo -e "\n${print_green}Launching IAMC dataset creation for $DATASET - [$start_time]${no_color}"
+				source ${INCLUDE}/runLINK_GENESYS.sh 
+				if ! linkgenesys_status; then return 1; fi			
+			fi
 			if [ "$CREATE" = "CREATE" ]; then
 				echo -e "\n${print_green}Launching plan4res dataset creation for $DATASET - [$start_time]${no_color}"
 				if [[ "$mode1" != "simul" && "$mode1" = "invest" ]]; then
@@ -344,7 +360,7 @@ function test_run_argument() {
 			format_status
 			;;
 	    *)
-			echo -e "\n${print_red}Error: First argument must be CLEAN, CREATE, FORMAT, SSV, SIM, CEM, POSTTREAT, SSVandSIM or SSVandCEM.${no_color}"
+			echo -e "\n${print_red}Error: First argument must be CLEAN, LINKGENESYS, CREATE, FORMAT, SSV, SIM, CEM, POSTTREAT, SSVandSIM or SSVandCEM.${no_color}"
 			return 1
 			;;
 	esac 
@@ -355,10 +371,12 @@ function test_run_argument() {
 function show_help() {
     echo "Usage: $0 runtype [dataset] -M [option1] -m [option2] -o [Dir] -H [save] -S [NumberIterationsFirstStep] [CheckConvEachXIter] -E [epsilon] -L [NumberOfCemIterations] [MaxNumberOfLoops] -D [distance] -U [configfile]"
     echo "Arguments:"
-    echo "  runtype   Run type (CLEAN, CREATE, FORMAT, SSV, SIM, CEM, SSVandSIM, SSVandCEM, POSTTREAT)"
+    echo "  runtype   Run type (CLEAN, LINKGENESYS, CREATE, FORMAT, SSV, SIM, CEM, SSVandSIM, SSVandCEM, POSTTREAT)"
     echo "  dataset   Name of dataset"
     echo "  -o [Dir] (or --out [Dir]) is optionnal ; Dir is the name of a subdir or dataset where results will be written"
 	echo "       -o is usable for SSV, CEM, SIM, SSVandSIM, SSVandCEM, POSTTREAT"
+  	echo "  -G or --linkgenesys is optionnal : in that case the IAMC dataset (from genesys-mod native inputs/outputs) will be created"
+	echo "       -G is usable for FORMAT, SSV, SIM, CEM, SSVandCEM, SSVandSIM, CEMloopSSV"
   	echo "  -C or --create is optionnal : in that case the dataset (csv files) will be created"
 	echo "       -C is usable for FORMAT, SSV, SIM, CEM, SSVandCEM, SSVandSIM, CEMloopSSV"
   	echo "  -F or --format is optionnal : in that case the netcdf dataset for sms++ (csv files) will be created"
@@ -403,6 +421,7 @@ function show_help() {
 	echo "============="
 	echo "  CLEAN: remove all results and revert to initial csv files if necessary (ie if cem -L was launched) "	
 	echo "  CONFIG: read config file in settings/plan4res_settings.yml and print to screen "
+	echo "  LINKGENESYS: creates a IAMC dataset from GENeSYS-MOD native inputs and outputs  "
 	echo "  CREATE: creates a plan4res dataset (csv files) from a IAMC dataset  "
 	echo "  	-M [simul]: the csv files will be created in csv_simul/ using settingsCreate_simul.yml"
 	echo "  		i.e. the csv files will not include columns describing potential investment "
@@ -450,21 +469,17 @@ function show_help() {
 	echo "   	-M [invest] : use results in results_invest"
 	echo "      if -M is not provided, default option is optim"
 	echo "  SSVandSIM:  "
-	echo "  		- CREATE -M simul"
-	echo "  		- FORMAT -M optim -m simul"
 	echo "  		- SSV -M simul"
-	echo "  		- FORMAT -M simul"
 	echo "  		- SIM "
 	echo "  		- POSTTREAT -M simul "
 	echo " 		the results will be in results_simul "
+	echo " 		LINKGENESYS, CREATE and FORMAT are ran if options -G, -C, -F are passed "
 	echo "  SSVandCEM: runs the following workflow: "
-	echo "  		- CREATE -M invest"
-	echo "  		- FORMAT -M optim -m invest"
 	echo "  		- SSV -M invest"
-	echo "  		- FORMAT -M invest"
 	echo "  		- CEM "
 	echo "  		- POSTTREAT -M invest "
 	echo " 	    the results will be in results_invest "	
+	echo " 		LINKGENESYS, CREATE and FORMAT are ran if options -G, -C, -F are passed "
     echo ""
     echo "Options:"
     echo "  -h, --help  Display this help and exit"
