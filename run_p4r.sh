@@ -113,13 +113,6 @@ block_id=0
 
 shift 2
 
-read_options $@
-result=$?
-if [ $result -eq 1 ]; then
-	echo -e "${print_red}exiting script, bad options${no_color}"
-	return 1
-fi
-
 echo -e "runtype: ${runtype}"
 echo -e "dataset: ${dataset}"
 echo -e "Dataset and results location: $DATA/$DATASET"
@@ -132,6 +125,12 @@ INSTANCE="${DATA}/${DATASET}"
 CONFIG="${DATA}/${DATASET}/settings"
 echo -e "Configuration files in: ${CONFIG}"
 read_settings
+read_options $@
+result=$?
+if [ $result -eq 1 ]; then
+	echo -e "${print_red}exiting script, bad options${no_color}"
+	return 1
+fi
 
 echo "The maximum number of simulations in parallel is $NB_MAX_PARALLEL_SIMUL"
 
