@@ -48,7 +48,7 @@ fi
 P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${CPUS_PER_NODE} --mpi=pmix -l"
 
 # run investment solver
-echo -e "\n${print_blue}  Run simulation  [$start_time] : ${no_color} ${P4R_ENV} investment_solver -n ${N_PARAL_SIM} -s -d ${INSTANCE_IN_P4R}/results_simul$OUT/ -l ${INSTANCE_IN_P4R}/results_simul$OUT/bellmanvalues.csv -e ${CONFIG_IN_P4R}/uc_solverconfig.txt -o -S ${CONFIG_IN_P4R}/BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ ${INSTANCE_IN_P4R}/nc4_simul/InvestmentBlock.nc4"
+echo -e "\n${print_blue}  Run simulation  [$start_time] : ${no_color} ${P4R_ENV} investment_solver -n ${N_PARAL_SIM} -s -d ${INSTANCE_IN_P4R}/results_simul$OUT/ -l ${INSTANCE_IN_P4R}/results_simul$OUT/bellmanvalues.csv -e uc_solverconfig.txt -o -S BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ InvestmentBlock.nc4"
 if [ "$solver" = "HiGHS" ]; then
 	time ${P4R_ENV} investment_solver -n ${N_PARAL_SIM} -s -d ${INSTANCE_IN_P4R}/results_simul$OUT/ -l ${INSTANCE_IN_P4R}/results_simul$OUT/bellmanvalues.csv -o -S BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ InvestmentBlock.nc4
 
