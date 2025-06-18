@@ -359,6 +359,42 @@ function get_yaml_value_level2() {
 	done < "$file"
 }
 
+function update_yaml_param() {
+	local file="$1"
+	local level="$2"
+	local key_path="$3"
+	local new_value="$4"
+	local indent="${5:-4}"
+
+	# Convert keys in a table (the key must be given as a string with eg 3 words if it is a level 3 param"
+	IFS=' ' read -r -a keys <<< "$key_path"
+
+	# compute number of spaces in indesnt
+	local total_indent=$(( (level - 1) * indent ))
+	local indentation
+	indentation=$(printf '%*s' "$total_indent")
+
+	# find target key
+	local target_key="${keys[-1]}"
+
+	case "$new_value" in
+		true|false|yes|no)
+			local formatted_value="$new_value"
+			;;
+		*)
+			local formatted_value="\"$new_value\""
+			;;
+	esac
+
+	# find row to replace and create new row
+	local search_line="${indentation}${target_key}:"
+	local replacement="${search_line} ${formatted_value}"
+
+	# replace row
+	sed -i -E "s|^${search_line}[^\n]*|${replacement}|" "$file"
+}
+
+
 function sddp_status {
     if [[ -f "${INSTANCE}/results_${mode1}${OUT}/BellmanValuesOUT.csv" ]]; then
         echo -e "${print_green}$(date +'%m/%d/%Y %H:%M:%S') - successfully ran SSV with SDDP solver (convergence OK).${no_color}"

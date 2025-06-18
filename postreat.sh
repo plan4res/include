@@ -23,8 +23,16 @@ for dir in ${INSTANCE}/results_${mode1}$OUT/Scenario*/; do
     fi
 done
 
+if [ "${mode1}" == "simul" ]; then
+	update_yaml_param "${CONFIG}/settingsPostTreatPlan4res.yml" 1 "Resultsdir" "results_simul/"
+	update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" no
+elif [ "${mode1}" == "invest" ]; then
+	update_yaml_param "${CONFIG}/settingsPostTreatPlan4res.yml" 1 "Resultsdir" "results_invest/"
+	update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" yes
+fi
+
 P4R_CMD="srun --wckey=${WCKEY}  --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 -J Format --mpi=pmix -l"
-${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/PostTreatPlan4res.py ${CONFIG_IN_P4R}/settingsPostTreatPlan4res_${mode1}.yml ${CONFIG_IN_P4R}/settings_format_${mode1}.yml ${CONFIG_IN_P4R}/settingsCreateInputPlan4res_${mode1}.yml ${DATASET}
+${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/PostTreatPlan4res.py ${CONFIG_IN_P4R}/settingsPostTreatPlan4res.yml ${CONFIG_IN_P4R}/settings_format_${mode1}.yml ${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml ${DATASET}
 python_script_return_status=$(read_python_status ${INSTANCE}python_return_status)
 if [[ $python_script_return_status -ne 0 ]]; then
     echo -e "${print_red}Script exited with error code ${python_return_status}. See above error messages.${no_color}"
