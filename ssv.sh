@@ -122,7 +122,7 @@ if [[ ! $STEPS = 0 ]]; then
 		SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt"| tail -n 1) 
 	fi
 	SSV_OUTPUT=$(printf "%06.4f" "$SSV_OUTPUT")
-	if [[ ${SSV_OUTPUT} < $lexEpsilonSSV ]]; then
+	if [[ ${SSV_OUTPUT} < $EpsilonSSV ]]; then
 		echo -e "${print_green}        - SSV reached optimality, no need for second step.${no_color}" 
 	else
 		# second step 
