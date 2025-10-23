@@ -74,7 +74,10 @@ if ! sddp_status; then return 1; fi
 echo -e "\n${print_blue}        - Create netcdf input files to run the CEM at iteration 0 ${no_color}"
 mode1="invest"
 mode2="invest"
+old_number_threads=${number_threads}
+number_threads=1
 source ${INCLUDE}/format.sh
+number_threads=${old_number_threads}
 wait
 if ! format_status; then return 1; fi	
 
@@ -93,6 +96,9 @@ echo -e "\n${print_orange}        - value of CEM at iteration 0: $cost_before ${
 iteration=0
 # Loop for subsequent iterations, checking and waiting for each job to finish
 while true; do
+	HOTSTARTold=$HOTSTART			  
+	HOTSTART="save"
+	echo -e "HOTSTART was $HOTSTARTold, now $HOTSTART"
     # Save file cuts.txt
 	echo -e "\n${print_blue}        - save cuts ans Solution_OUT for iteration $iteration ${no_color}"
     cp ${INSTANCE}/results_optim$OUT/cuts.txt ${INSTANCE}/results_optim$OUT/cuts_${index_scen}_${iteration}.txt
@@ -161,8 +167,8 @@ while true; do
 		if [[  ("${retVal}" == *"less"*) && ($result -eq 0)   ]]; then
 			echo "HOTSTART=$HOTSTART"
 			echo -e "\n${print_orange}        - Distance to previous mix is low, no need to rerun SSV, rerun CEM in HOTSTART mode ${no_color}"
-			local HOTSTARTold=$HOTSTART			
-			if [ "$HOTSTART" = "" ]; then HOTSTART="HOTSTART"; fi
+			local HOTSTARTold=$HOTSTART	
+			HOTSTART="HOTSTART"
 			echo "HOTSTART was $HOTSTARTold, now $HOTSTART"
 			echo "HOTSTART=$HOTSTART"
 		else
@@ -177,35 +183,39 @@ while true; do
 			mode1="optim"
 			if ! format_status; then return 1; fi	
     
-			echo "HOTSTART=$HOTSTART"
+			HOTSTARTold=$HOTSTART			  
+			HOTSTART=""
+			echo "HOTSTART was $HOTSTARTold, now $HOTSTART"
 			echo -e "\n${print_blue}        - Run SSV at iteration $iteration ${no_color}"
 			source ${INCLUDE}/ssv.sh
 			wait
 			if ! sddp_status; then return 1; fi	
 			echo "HOTSTART=$HOTSTART"
-    
-			# create new netcdf files for cem from csv_invest
-			mode1="invest"
-			mode2="invest"
-			echo -e "\n${print_blue}        - Create netcdf input files to run CEM at iteration $iteration  ${no_color}"
-			source ${INCLUDE}/format.sh
-			wait
-			if ! format_status; then return 1; fi
 
 			echo -e "\n${print_blue}        - copy Bellman values from results_optim$OUT to results_invest$OUT and run CEM at iteration $iteration ${no_color}"
 			copy_ssv_output_from_to "optim" "invest"
 		fi
-
-		# run cem and return invest_output
-		echo "HOTSTART=$HOTSTART"
-		source ${INCLUDE}/cem.sh
-		wait
-		echo "HOTSTART=$HOTSTART"
-		if ! investment_status; then return 1; fi	
-		invest_output="$INVEST_OUTPUT"	
-		HOTSTART=$HOTSTARTold
+		HOTSTARTold=$HOTSTART			  
+		HOTSTART="save"
 		echo "HOTSTART was $HOTSTARTold, now $HOTSTART"
-		
+ 
+  		# run cem and return invest_output
+  		echo "HOTSTART=$HOTSTART"
+		old_number_threads=${number_threads}
+		number_threads=$CPUS_PER_NODE
+		if [[ $NBSCEN_CEM -lt $number_threads ]]; then 
+			number_threads=$NBSCEN_CEM
+		fi
+  		source ${INCLUDE}/cem.sh
+  		wait
+  		echo "HOTSTART=$HOTSTART"
+  		if ! investment_status; then return 1; fi
+      	
+  		invest_output="$INVEST_OUTPUT"	
+		number_threads=${old_number_threads}
+  		HOTSTART=$HOTSTARTold
+  		echo "HOTSTART was $HOTSTARTold, now $HOTSTART"
+				
 	fi
 done
 
@@ -218,7 +228,7 @@ fi
 if [[ RetConv != "stop (optimal)" ]]; then
 	echo -e "\n${print_orange}    - Restart CEM in hotstart mode ${no_color}"
 	# restart cem in hotstart
-	if [ "$HOTSTART" = "" ]; then HOTSTART="HOTSTART"; fi
+	HOTSTART="HOTSTART" # do not use save in case one cut is not good enough and prevents reaching a better solution (why??; in practice it worked often better without save)
 	if [[ -z "$NumberOfCemIterations" ]]; then
 		replace_param "${CONFIG}/BSPar-Investment.txt" "intMaxIter" "50"
 		echo -e "${print_blue}        - BSPar-Investment.txt config file : replaced value of intMaxIter by 50.${no_color}"	
@@ -227,7 +237,13 @@ if [[ RetConv != "stop (optimal)" ]]; then
 		echo -e "${print_blue}        - BSPar-Investment.txt config file : replaced value of intMaxIter by $NumberOfCemIterations.${no_color}"
 	fi
 
+	old_number_threads=${number_threads}
+	number_threads=$CPUS_PER_NODE
+	if [[ $NBSCEN_CEM -lt $number_threads ]]; then 
+		number_threads=$NBSCEN_CEM
+	fi
 	source ${INCLUDE}/cem.sh
+	number_threads=${old_number_threads}
 	wait
 	if ! investment_status; then return 1; fi	
 	invest_output="$INVEST_OUTPUT"	
@@ -235,6 +251,16 @@ if [[ RetConv != "stop (optimal)" ]]; then
 fi
 
 # run post treatment script
+# Solution_OUT contains the global solution of the investment, starting from the initial mix
+# posttreat had been modified to use the saved version of the csv files before the last iteration of cemloop
+# posttreat should be changed back and SOlutionOUT used in a further versiuon
+number_threads=1
+      
+mode1="postinvest"
+mode2="simul"
+source ${INCLUDE}/format.sh
+cp ${INSTANCE}/results_invest$OUT/Solution_ONES.csv ${INSTANCE}/results_invest$OUT/Solution_OUT.csv
+
 echo -e "\n${print_blue}    - launch post treat${no_color}"
 mode1="invest"
 source ${INCLUDE}/postreat.sh
