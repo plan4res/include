@@ -41,6 +41,8 @@ echo "Local plan4res repo : $LOCAL_P4R_DIR"
 
 P4R_ENV="$P4R_DIR/bin/p4r"
 PYTHONSCRIPTS="${P4R_DIR}/scripts/python/plan4res-scripts"
+ADDONS="${P4R_DIR}/scripts/add-ons/install"
+GENESYS="${P4R_DIR}/scripts/add-ons/GENeSYS_MOD.jl"
 INCLUDE="$P4R_DIR/scripts/include"
 DATA="${LOCAL_P4R_DIR}/data"
 
@@ -157,6 +159,8 @@ else
     INSTANCE_IN_P4R=${INSTANCE}
     CONFIG_IN_P4R=${CONFIG}
     INCLUDE_IN_P4R=${INCLUDE}
+	GENESYS_IN_P4R=${GENESYS}
+    ADDONS_IN_P4R=${ADDONS}
 fi
 
 start_time=$(date +'%m/%d/%Y %H:%M:%S')

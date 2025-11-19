@@ -299,9 +299,11 @@ function format_status {
 	fi
 	
 	# check InvestmentBlock.nc4
-	if [[ "$mode1" = "simul" || "mode1" = "invest" || "mode1" = "postinvest" ]]; then
-		if [ ! -f "${INSTANCE}/nc4_${mode1}/InvestmentBlock.nc4" ]; then
-			missing_files+=("InvestmentBlock")
+	if [[ "$runtype" = "CEM" || "$runtype" = "SIM" || "$runtype" = "FORMAT" ]]; then
+		if [[ "$mode1" = "simul" || "mode1" = "invest" || "mode1" = "postinvest" ]]; then
+			if [ ! -f "${INSTANCE}/nc4_${mode1}/InvestmentBlock.nc4" ]; then
+				missing_files+=("InvestmentBlock")
+			fi
 		fi
 	fi
 	
@@ -653,21 +655,37 @@ function copy_ssv_output_from_to() {
 
 function test_fill_option() {
 	local var_name="$1"
+	local value_first=$4
 	local value=$3
 	local option=$2
 	local var_value="${!var_name}"
-	if [[ $value == --* ]] || [[ $value == -* ]] || [[ $value == "" ]]; then
-    		if [[ -z "$var_value" ]]; then
-        		echo -e "${print_red} input not provided afer $option and variable $varname not in $main_config_file${no_color}"
+	echo "test_fill_option with varbame1=$var_name value3=$value option2=$option var_value=$var_value"
+
+	if [[ $value_first == --* ]] || [[ $value_first == -* ]] || [[ $value_first == "" ]]; then
+    	echo -e "${print_red} input not provided afer $option"
+		if [[ -z "$var_value" ]]; then
+        	echo -e "${print_red} variable $var_name not in $main_config_file${no_color}"
 			return 1
 		else
 			echo -e "${print_orange}        input not provided afer $option but variable $var_name available in $main_config_file with value $var_value ${no_color}"			
 			return 0    		
 		fi
 	else
-		"$var_name"="$value"
-		shift
-		return 0
+		if [[ $value == --* ]] || [[ $value == -* ]] || [[ $value == "" ]]; then
+			echo -e "${print_red} input not provided afer $option"
+			if [[ -z "$var_value" ]]; then
+				echo -e "${print_red} variable $var_name not in $main_config_file${no_color}"
+				return 1
+			else
+				echo -e "${print_orange}        input not provided afer $option but variable $var_name available in $main_config_file with value $var_value ${no_color}"			
+				return 0    		
+			fi
+		else
+			echo -e "${print_green} value : $value for var $var_name will be used"
+			"$var_name"="$value"
+			shift
+			return 0
+		fi
 	fi 
 	return 0	
 }

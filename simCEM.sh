@@ -25,12 +25,16 @@ solver=$(get_solver "${CONFIG}/uc_solverconfig.txt")
 solver=$(echo "$solver" | sed 's/MILPSolver//')
 echo -e "\n${print_blue}     - using $solver to solve MILPs ${no_color}"
 
-N_PARAL_SIM=$NBSCEN_SIM
-if [ "$NBSCEN_SIM" -gt "$NB_MAX_PARALLEL_SIMUL" ] ; then
-	N_SEQ=$( ceil_division $NBSCEN_SIM $NB_MAX_PARALLEL_SIMUL )
-	N_PARAL_SIM=$(  ceil_division $NBSCEN_SIM $N_SEQ   )
-	echo -e "${print_blue} simulations will be ran in $N_SEQ sequences of $N_PARAL_SIM scenarios ${no_color}"
-fi
+#N_PARAL_SIM=$NBSCEN_SIM
+#if [ "$NBSCEN_SIM" -gt "$NB_MAX_PARALLEL_SIMUL" ] ; then
+#	N_SEQ=$( ceil_division $NBSCEN_SIM $NB_MAX_PARALLEL_SIMUL )
+#	N_PARAL_SIM=$(  ceil_division $NBSCEN_SIM $N_SEQ   )
+#	echo -e "${print_blue} simulations will be ran in $N_SEQ sequences of $N_PARAL_SIM scenarios ${no_color}"
+#fi
+NTASKS_PER_NODE=1
+N_PARAL_SIM=$number_threads
+N_CPUS_PER_TASK=$number_threads
+OMP_NUM_THREADS=$number_threads
 
 if check_param "${CONFIG}/BSPar-Investment.txt" "intMaxThread"; then
 	intMaxThread=$(get_param_value "intMaxThread" "${CONFIG}/BSPar-Investment.txt")
@@ -45,7 +49,8 @@ else
 fi
 
 # run investment solver
-P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${CPUS_PER_NODE} --mpi=pmix -l"
+P4R_CMD="srun --wckey=${WCKEY} --nodes=${SLURM_JOB_NUM_NODES} --ntasks-per-node=${NTASKS_PER_NODE} --cpus-per-task=${N_CPUS_PER_TASK} --mpi=pmix -l"
+
 
 # run investment solver
 echo -e "\n${print_blue}  Run simulation  [$start_time] : ${no_color} ${P4R_ENV} investment_solver -n ${N_PARAL_SIM} -s -d ${INSTANCE_IN_P4R}/results_simul$OUT/ -l ${INSTANCE_IN_P4R}/results_simul$OUT/bellmanvalues.csv -e uc_solverconfig.txt -o -S BSPar-Investment.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ InvestmentBlock.nc4"

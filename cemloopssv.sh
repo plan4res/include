@@ -100,7 +100,7 @@ while true; do
 	HOTSTART="save"
 	echo -e "HOTSTART was $HOTSTARTold, now $HOTSTART"
     # Save file cuts.txt
-	echo -e "\n${print_blue}        - save cuts ans Solution_OUT for iteration $iteration ${no_color}"
+	echo -e "\n${print_blue}        - save cuts and Solution_OUT for iteration $iteration ${no_color}"
     cp ${INSTANCE}/results_optim$OUT/cuts.txt ${INSTANCE}/results_optim$OUT/cuts_${index_scen}_${iteration}.txt
     cp ${INSTANCE}/results_invest$OUT/Solution_OUT.csv ${INSTANCE}/results_invest$OUT/Solution_OUT_${index_scen}_${iteration}.csv
     

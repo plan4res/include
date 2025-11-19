@@ -16,9 +16,9 @@ if [ ! "$cem_config_file" = "" ]; then
 	if [[ "$NB" =~ ^-?[0-9]+$ ]]; then
     	echo -e "\n${print_blue}    - There are $NB lists of scenarios in ${CONFIG}/${cem_config_file}:"
 		for (( i=1; i<=$NB; i++ )); do
-			line=$(sed -n "$((i+1))p" ${CONFIG}/$cem_config_file)
-			eval "Scenario_$i='$line'"
-			eval "echo i=$i, \${Scenario_$i}"
+			read -r line < <( sed -n "$((i+1))p" "$CONFIG/$cem_config_file" )
+			declare "Scenario_$i=$line"
+			eval "echo i=$i, \"\${Scenario_$i}\""
 		done	
 		echo -e "${no_color}"
 	else
@@ -63,7 +63,6 @@ if [ "$cem_config_file" = "" ]; then
 		if [ $test -eq 1 ]; then return 1; fi	
 
 		invest_output="$INVEST_OUTPUT"
-		echo "$invest_output"
 	fi
 else
 	# if there is a config file with lists of scenarios to use, run investment in sequence on all lists
@@ -72,7 +71,13 @@ else
 		eval "echo \${Scenario_$it_scen}"
 		echo -e "${no_color}"
 		
-		# update settings_format_invest with scenarios in Scenario_$it_scen
+		# update settings_format_invest, settings_format_optim and settings_format_postinvest with scenarios in Scenario_$it_scen
+		if [[ -f "$CONFIG/settings_format_optim.yml" ]]; then
+			eval "update_scenarios \"${CONFIG}\"/settings_format_optim.yml \"\${Scenario_$it_scen}\""
+		fi
+		if [[ -f "$CONFIG/settings_format_postinvest.yml" ]]; then
+			eval "update_scenarios \"${CONFIG}\"/settings_format_postinvest.yml \"\${Scenario_$it_scen}\""
+		fi
 		eval "update_scenarios \"${CONFIG}\"/settings_format_invest.yml \"\${Scenario_$it_scen}\""
 		rowsettings=$(awk -F ':' '$1=="    Scenarios"' ${CONFIG}/settings_format_invest.yml)
 		StrNbCommas=$(grep -o "," <<< "$rowsettings" | wc -l)
