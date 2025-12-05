@@ -72,10 +72,19 @@ function read_options() {
 					shift
 				fi 
 				;;
+			-s|--sim)
+				onesim=1
+				test_option $1 $2
+				test=$?
+				if [ $test -eq 0 ]; then indexsim="$2" ; shift; fi
+				echo "Run simulation for scenario $indexsim"
+				shift
+				;;
         	-C|--create) CREATE="CREATE"; echo "csv dataset will be created before running ${runtype}"; shift ;;
         	-G|--linkgenesys) LINKGENESYS="LINKGENESYS"; echo "IAMC files from GENeSYS-MOD native inputs/outputs will be created before running ${runtype}"; shift ;;
         	-F|--format) FORMAT="FORMAT"; echo "nc4 dataset will be created before running ${runtype}" ; shift ;;
         	-S|--steps) 
+				echo "main_fu -S testfill NumberSSVIterationsFirstStep $1 $2"
 				test_fill_option "NumberSSVIterationsFirstStep" "$1" "$2"
 				test=$?
 				if [ $test -eq 0 ]; then 
@@ -84,6 +93,7 @@ function read_options() {
 					echo -e "${print_red} option -S requested but parameter NumberIterationsFirstStep not present in command nor ${CONFIG}/plan4res_settings.yml${no_color}"
 					return 1
 				fi	
+				echo "main_fu -S testfill CheckConvEachXIterInFirstStep $1 $3"
 				test_fill_option "CheckConvEachXIterInFirstStep" "$1" "$3"
 				test=$?
 				if [ $test -eq 0 ]; then 
@@ -92,6 +102,7 @@ function read_options() {
 					echo -e "${print_red} option -S requested but parameter CheckConvEachXIterInFirstStep not present in command nor ${CONFIG}/plan4res_settings.yml${no_color}"
 					return 1      
 				fi
+				echo "main_fu -S testfill NumberSSVForwardFirstStep $1 $4"
 				test_fill_option "NumberSSVForwardFirstStep" "$1" "$4"
 				test=$?
 				if [ $test -eq 0 ]; then 
@@ -104,6 +115,7 @@ function read_options() {
 					echo "SSV will be ran in 2 steps"
 				fi
 				shift
+				echo "SSV ran with params STEPS=${STEPS}, ITERCONV=${ITERCONV},  SSVFORWARD=${SSVFORWARD}"
 				;;
         	-t|--nbthreads) 				
 				test_option "number_threads" $2
@@ -112,7 +124,6 @@ function read_options() {
 				if [ $test -eq 0 ]; then 
 					if [[ "${runtype}" = "FORMAT" || "$FORMAT" = "FORMAT" ]]; then
 						echo "nc4 will be created with ${number_threads} subblocks ="
-					   
 					fi
 
 					shift			
@@ -121,6 +132,7 @@ function read_options() {
 				;;
         	-L|--loopssv) 
 				LOOPCEM="LOOPCEM"
+				echo "main_fu -L testfill NumberOfCemIterationsInLoopCEM $1 $2"
 				test_fill_option "NumberOfCemIterationsInLoopCEM" "$1" "$2"
 				test=$?
 				if [ $test -eq 0 ]; then 
@@ -129,6 +141,7 @@ function read_options() {
 					echo -e "${print_red} option -L requested but parameter NumberOfCemIterationsInLoopCEM not present in command nor in ${CONFIG}/plan4res_settings.yml; STOP${no_color}"					
 					return 1; 
 				fi
+				echo "main_fu -L testfill MaxNumberOfLoops $1 $3"
 				test_fill_option "MaxNumberOfLoops" "$1" "$3"
 				test=$?
 				if [ $test -eq 0 ]; then  
@@ -398,7 +411,6 @@ function show_help() {
 	echo "       -S is usable for SSV, CEM" 
 	echo "       NumberIterationsFirstStep is the max number of iterations of the first step"
 	echo "       CheckConvEachXIter: convergence is checked after CheckConvEachXIter SSV iterations"	
-	echo "       NumberSSVForwardFirstStep: number of forward simulations in the first step"	
 	echo "     Values of options to -S can be given in the launching command or is settings file plan4res_settings.yml"
   	echo "  -L or --loopssv : in that case CEM will be launched using a loop of ssv/cem until convergence" 
 	echo "       -L is usable for CEM"
