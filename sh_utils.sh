@@ -307,12 +307,12 @@ function format_status {
 		fi
 	fi
 	
-	if [[ ! -f "${INSTANCE}/nc4_${mode1}/SDDPBlock.nc4" ]]; then
+	if [[ ! -f "${INSTANCE}/nc4_${mode1}${OUT}/SDDPBlock.nc4" ]]; then
 		missing_files+=("SDDPBlock")
 	fi
 	
 	for ((i=0; i<number_blocks; i++)); do
-		file="${INSTANCE}/nc4_${mode1}/Block_${i}.nc4"
+		file="${INSTANCE}/nc4_${mode1}${OUT}/Block_${i}.nc4"
 		if [[ ! -f "$file" ]]; then
 			missing_files+=("Block_${i}")
 		fi
@@ -320,7 +320,7 @@ function format_status {
 
 	if [ ${#missing_files[@]} -eq 0 ]; then
 		echo -e "${print_green}$(date +'%m/%d/%Y %H:%M:%S') - successfully ran FORMAT. ${no_color}"
-    	echo -e "${print_green} results available in ${INSTANCE}/nc4_$mode1 ${no_color}"
+    	echo -e "${print_green} results available in ${INSTANCE}/nc4_${mode1}${OUT} ${no_color}"
 		return 0
 	else
 	    echo -e "${print_red}$(date +'%m/%d/%Y %H:%M:%S') - error while running FORMAT ${missing_files[@]} in ${INSTANCE}/nc4_$mode1.${no_color}"
