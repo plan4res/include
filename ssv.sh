@@ -114,13 +114,13 @@ if [[ ! $STEPS = 0 ]]; then
 	if [ ! "$HOTSTART" = "" ]; then
 		# run in hotstart
 		echo -e "${print_blue}\n    - Running in HOTSTART mode using /results_${mode1}$OUT/cuts.txt${no_color}"
-		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}$OUT/ssv_out.txt
+		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}$OUT/ssv_out.txt
 		wait
 		#SSV_OUTPUT=$(grep "ACCURACY" "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt" | awk '{print $2}' | tail -n 1)
 		SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt"| tail -n 1) 
 
 	else	
-		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}$OUT/ssv_out.txt
+		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}$OUT/ssv_out.txt
 		wait
 		SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt"| tail -n 1) 
 	fi
@@ -167,11 +167,11 @@ if [[ ! $STEPS = 0 ]]; then
    
 		# run second step of sddp in hotstart mode
 		if [ -f "${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt" ]; then
-			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4"      
-			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ SDDPBlock.nc4
+			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4"      
+			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4
 		else
-			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ ${INSTANCE_IN_P4R}/nc4_optim/SDDPBlock.nc4"      
-			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ SDDPBlock.nc4
+			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4"      
+			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4
 		fi
 	fi
 else	
@@ -230,7 +230,7 @@ else
 	if [ "$HOTSTART" = "HOTSTART" ]; then
 		# run in hotstart
 		echo -e "${print_blue}\n    - Running in HOTSTART mode using /results_${mode1}$OUT/cuts.txt ${no_color}"
-		time ${P4R_ENV} sddp_solver -n ${OMP_NUM_THREADS} -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ SDDPBlock.nc4
+		time ${P4R_ENV} sddp_solver -n ${OMP_NUM_THREADS} -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4
 	else
  
  
@@ -240,7 +240,7 @@ else
 				   
 					  
 									  
-		time ${P4R_ENV} sddp_solver -n ${OMP_NUM_THREADS} -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/ SDDPBlock.nc4  
+		time ${P4R_ENV} sddp_solver -n ${OMP_NUM_THREADS} -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4  
 
 	fi
 fi
