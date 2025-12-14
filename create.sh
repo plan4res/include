@@ -10,9 +10,21 @@ fi
 echo -e "\n${print_blue}        - Create plan4res input files: ${no_color} ${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/CreateInputPlan4res.py ${CONFIG_IN_P4R}/settingsCreateInputPlan4res_${mode1}.yml ${DATASET}"
 echo -e "\n${print_blue}           - change value of ParameterCreate/invest in settingsCreateInputPlan4res.yml to ${mode1}: ${no_color} "
 if [ "${mode1}" == "simul" ]; then
-	update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" no
+    update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" no
+    if [ -n "${OUT}" ] && [ "${OUT}" != "" ]; then
+        SUBDIR=$(echo "${OUT}" | sed 's|^/||')
+        update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 1 "outputpath" "csv_simul/${SUBDIR}/"
+    else
+        update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 1 "outputpath" "csv_simul/"
+    fi
 elif [ "${mode1}" == "invest" ]; then
-	update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" yes
+    update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" yes
+    if [ -n "${OUT}" ] && [ "${OUT}" != "" ]; then
+        SUBDIR=$(echo "${OUT}" | sed 's|^/||')
+        update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 1 "outputpath" "csv_invest/${SUBDIR}/"
+    else
+        update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 1 "outputpath" "csv_invest/"
+    fi
 fi
 P4R_CMD="srun --wckey=${WCKEY}  --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 -J Format --mpi=pmix -l"
 ${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/CreateInputPlan4res.py ${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml ${DATASET}
