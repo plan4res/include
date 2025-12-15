@@ -27,10 +27,11 @@ fi
 
 if check_param "${CONFIG}/sddp_solver.txt" "intNbSimulCheckForConv"; then
 	intNbSimulCheckForConv=$(get_param_value "intNbSimulCheckForConv" "${CONFIG}/sddp_solver.txt")
+  
 	if [[ $intNbSimulCheckForConv -gt $NBSCEN_OPT ]]; then	
 		# forbids to run more simulations than scenarios
 		# this should be possible but it behaves strangely, to be checked with Rafael
-	#if [[ 2 -gt $NBSCEN_OPT ]]; then # to be checked 
+												   
 		replace_param "${CONFIG}/sddp_solver.txt" "intNbSimulCheckForConv" "$NBSCEN_OPT"
 		echo -e "${print_blue}        - sddp_solver.txt config file : replaced value of intNbSimulCheckForConv by $NBSCEN_OPT.${no_color}" 
 	else
@@ -69,13 +70,13 @@ if [ ! -f "${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt" ]; then
 	
 fi
 
-																																											   
+											  
 P4R_CMD="srun  --wckey=${WCKEY} --nodes=${SLURM_JOB_NUM_NODES} --ntasks-per-node=${NTASKS_PER_NODE} --distribution=cyclic --cpus-per-task=${N_CPUS_PER_TASK} -l --mpi=pmix "
 
 
 if [[ ! $STEPS = 0 ]]; then
 	
-	echo -e "\n${print_blue}    - Run SSV in 2 steps with max $NumberSSVIterationsFirstStep iterations and convergence check each $CheckConvEachXIterInFirstStep iterations in first step  ${no_color}"	
+	echo -e "\n${print_blue}    - Run SSV in 2 steps with max $NumberSSVIterationsFirstStep iterations, $NumberSSVForwardFirstStep Forward scenarios per iterations and convergence check each $CheckConvEachXIterInFirstStep iterations in first step  ${no_color}"	
 
 	# first step 
 	############	
@@ -87,7 +88,7 @@ if [[ ! $STEPS = 0 ]]; then
 		increment_int_param_count "${CONFIG}/sddp_solver.txt"
 		add_int_param "${CONFIG}/sddp_solver.txt" "intNStepConv" "$ITERCONV"
 		echo -e "${print_blue}        - sddp_solver.txt config file : added param intNStepConv: $ITERCONV.${no_color}" 
-	fi
+  fi
 	
 	# update sddp_solver to run max $STEPS iterations
 	if check_param "${CONFIG}/sddp_solver.txt" "intMaxIter"; then
@@ -99,7 +100,7 @@ if [[ ! $STEPS = 0 ]]; then
 		add_int_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "$STEPS"
 		echo -e "${print_blue}        - sddp_solver.txt config file : added param intMaxIter: $STEPS.${no_color}" 
 	fi
-
+ 
  	if check_param "${CONFIG}/sddp_solver.txt" "intNbSimulForward"; then
 		replace_param "${CONFIG}/sddp_solver.txt" "intNbSimulForward" "$SSVFORWARD"
 		echo -e "${print_blue}        - sddp_solver.txt config file : replaced value of intNbSimulForward by $SSVFORWARD.${no_color}" 
@@ -107,8 +108,8 @@ if [[ ! $STEPS = 0 ]]; then
 		increment_int_param_count "${CONFIG}/sddp_solver.txt"
 		add_int_param "${CONFIG}/sddp_solver.txt" "intNbSimulForward" "$SSVFORWARD"
 		echo -e "${print_blue}        - sddp_solver.txt config file : added param intNbSimulForward: $SSVFORWARD.${no_color}" 
-	fi	
- 
+	fi
+	
 	# run first step of sddp
 	# hotstart run is possible in 2 steps mode
 	if [ ! "$HOTSTART" = "" ]; then
@@ -116,19 +117,19 @@ if [[ ! $STEPS = 0 ]]; then
 		echo -e "${print_blue}\n    - Running in HOTSTART mode using /results_${mode1}$OUT/cuts.txt${no_color}"
 		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}$OUT/ssv_out.txt
 		wait
-		#SSV_OUTPUT=$(grep "ACCURACY" "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt" | awk '{print $2}' | tail -n 1)
+																											  
 		SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt"| tail -n 1) 
 
 	else	
 		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}$OUT/ssv_out.txt
 		wait
-		SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt"| tail -n 1) 
+    SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt"| tail -n 1) 
 	fi
-	SSV_OUTPUT=$(printf "%06.4f" "$SSV_OUTPUT")
-	#SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "ssv_out.txt" | tail -n 1)
-	echo -e "SSV_OUTPUT=$SSV_OUTPUT" 
+    SSV_OUTPUT=$(printf "%06.4f" "$SSV_OUTPUT")
+																		 
+  echo -e "SSV_OUTPUT=$SSV_OUTPUT" 
+  
 
-	#if (( $(echo "$SSV_OUTPUT < $EpsilonSSV" | bc -l) )); then
 
 
 	if [[ ${SSV_OUTPUT} < $EpsilonSSV ]]; then
@@ -154,9 +155,9 @@ if [[ ! $STEPS = 0 ]]; then
 			replace_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "500"
 			echo -e "${print_blue}        - successfully updated sddp_solver.txt config file : replaced value of intMaxIter by 500.${no_color}" 
 		fi
-		
+ 
 
-	  
+      
 		if [[ ! -z "${NumberSSVForward}" ]]; then
 			replace_param "${CONFIG}/sddp_solver.txt" "intNbSimulForward" "$NumberSSVForward"
 			echo -e "${print_blue}        - sddp_solver.txt config file : replaced value of intNbSimulForward by $NumberSSVForward.${no_color}" 
@@ -173,7 +174,7 @@ if [[ ! $STEPS = 0 ]]; then
 			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4"      
 			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4
 		fi
-	fi
+  fi
 else	
 	# update number max of iterations	
 	if check_param "${CONFIG}/sddp_solver.txt" "intMaxIter"; then
@@ -191,9 +192,9 @@ else
 		add_int_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "500"
 		echo -e "${print_blue}        - updated sddp_solver.txt config file : added intMaxIter: 500.${no_color}" 
 	fi
-
-	  
-	  
+      
+      
+      
 	if check_param "${CONFIG}/sddp_solver.txt" "intNbSimulForward"; then
 		intNbSimulForward=$(get_param_value "intNbSimulForward" "${CONFIG}/sddp_solver.txt")
 		if [[ ! -z "${NumberSSVForward}" ]]; then
@@ -208,7 +209,7 @@ else
 		increment_int_param_count "${CONFIG}/sddp_solver.txt"		
 		add_int_param "${CONFIG}/sddp_solver.txt" "intNbSimulForward" "1"
 		echo -e "${print_blue}        - updated sddp_solver.txt config file : added intNbSimulForward: 1.${no_color}" 
-	fi
+  fi
 	# update test convergence each X iteration	
 	if check_param "${CONFIG}/sddp_solver.txt" "intNStepConv"; then
 		intNStepConv=$(get_param_value "intNStepConv" "${CONFIG}/sddp_solver.txt")
@@ -234,12 +235,12 @@ else
 	else
  
  
-				   
-					
-			   
-				   
-					  
-									  
+
+	 
+	  
+	   
+	   
+		   
 		time ${P4R_ENV} sddp_solver -n ${OMP_NUM_THREADS} -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4  
 
 	fi
