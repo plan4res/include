@@ -112,6 +112,12 @@ cem_config_file=""
 LOOPCEM=""
 maxnumberloops=10
 block_id=0
+indexsim=0
+sizegroupsim=1
+onesim=0
+groupsim=0
+numgroupsim=0 
+onegroupsim=0
 
 shift 2
 
