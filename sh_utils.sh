@@ -216,10 +216,10 @@ function filter_cuts() {
 		suffix="_$group" 
 	fi
 	# bellman values may have been computed for more ssv timestpeps than required => remove them
-	LASTSTEP=$(ls -l ${INSTANCE}/nc4_$mode$suffix/Block*.nc4 | wc -l)
+	LASTSTEP=$(ls -l ${INSTANCE}/nc4_${mode}${suffix}/Block*.nc4 | wc -l)
 	echo -e "${print_blue}        - remove Bellman values after $LASTSTEP steps since they will not be used by the CEM ${no_color}\n"
-	awk -F, -v laststep="$LASTSTEP" 'NR==1 || $1 < laststep' "${INSTANCE}/results_$mode${OUT}$suffix/bellmanvalues.csv" > "${INSTANCE}/results_$mode${OUT}$suffix/temp.csv"
-	mv ${INSTANCE}/results_$mode${OUT}$suffix/temp.csv ${INSTANCE}/results_$mode${OUT}$suffix/bellmanvalues.csv
+	awk -F, -v laststep="$LASTSTEP" 'NR==1 || $1 < laststep' "${INSTANCE}/results_$mode${OUT}${suffix}/bellmanvalues.csv" > "${INSTANCE}/results_$mode${OUT}${suffix}/temp.csv"
+	mv ${INSTANCE}/results_$mode${OUT}${suffix}/temp.csv ${INSTANCE}/results_$mode${OUT}${suffix}/bellmanvalues.csv
  }
 
 function create_results_dir() {
