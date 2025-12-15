@@ -12,55 +12,129 @@ function check_results_dir() {
 	fi
 }
 
-function remove_previous_ssv_results() {
-	echo -e "${print_blue}        - if existing, remove previous ssv results in ${INSTANCE}/results_$1$OUT ${no_color}\n"
+function create_format_settings_group() {
 
-	if [ -f "${INSTANCE}/results_$1$OUT/BellmanValuesOUT.csv" ]; then
-		rm ${INSTANCE}/results_$1$OUT/BellmanValuesOUT.csv
+	local settings="$1"
+    local settings_group="$2"
+    local G="$3"
+    local I="$4"
+    local N="$5"
+
+	echo -e "${print_blue}        - replace Scenarios list in $settings, creating $settings_group, with $N scenarios from scen $I ${no_color}\n"
+    awk -v I="$I" -v N="$N" '
+    /^[[:space:]]*Scenarios:[[:space:]]*\[/ {
+
+        # Supprimer tout avant le [
+        line = $0
+        sub(/^.*\[/, "", line)
+        sub(/\].*$/, "", line)
+
+        # Découper la liste par virgules
+        n = split(line, vals, ",")
+
+        start = I + 1          # awk commence à 1
+        end = start + N - 1
+
+        printf "    Scenarios: ["
+        first = 1
+
+        for (i = start; i <= end && i <= n; i++) {
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", vals[i])
+
+            if (!first) printf ","
+            printf "%s", vals[i]
+            first = 0
+        }
+
+        printf "]\n"
+        next
+    }
+
+    { print }
+
+    ' "$settings" > "$settings_group"
+	
+	sed -i "s|outputDir: 'nc4_simul/'|outputDir: 'nc4_simul_${G}/'|g" "$settings_group"
+}
+
+move_simul_results_group() {
+	grp="$1"
+	current_first_scen="$2"
+	size_group="$3"
+	SRC_DIR="${INSTANCE_IN_P4R}/results_simul${OUT}_${grp}"
+	DEST_DIR="${INSTANCE_IN_P4R}/results_simul${OUT}"
+
+	for ((i=0; i<$size_group; i++)); do
+		j=$((current_first_scen + i))
+		for file in "$SRC_DIR"/*_Scen${i}_OUT.csv; do
+			# Vérifier que le fichier existe
+			[ -e "$file" ] || continue
+
+			base=$(basename "$file")
+			
+			# Remplacer _Scen<i>_ par _Scen<j>_
+			newname=$(echo "$base" | sed "s/_Scen${i}_/_Scen${j}_/")
+			mv "$file" "$DEST_DIR/$newname"
+		done
+	done
+}
+function move_simul_results() {
+	echo -e "${print_blue}        - move results of simulation to ${INSTANCE}/results_$1${OUT}  ${no_color}\n"
+	for file in $outputs ; do
+		mv ${INSTANCE}/results_$1${OUT}/$file*.csv ${INSTANCE}/results_$1${OUT}/$file/
+	done
+	mv ${INSTANCE}/results_$1${OUT}/MarginalCost*.csv ${INSTANCE}/results_$1${OUT}/MarginalCosts/
+}
+
+function remove_previous_ssv_results() {
+	echo -e "${print_blue}        - if existing, remove previous ssv results in ${INSTANCE}/results_$1${OUT} ${no_color}\n"
+
+	if [ -f "${INSTANCE}/results_$1${OUT}/BellmanValuesOUT.csv" ]; then
+		rm ${INSTANCE}/results_$1${OUT}/BellmanValuesOUT.csv
 	fi
-	if [ -f "${INSTANCE}/results_$1$OUT/BellmanValuesAllOUT.csv" ]; then
-		rm ${INSTANCE}/results_$1$OUT/BellmanValuesAllOUT.csv
+	if [ -f "${INSTANCE}/results_$1${OUT}/BellmanValuesAllOUT.csv" ]; then
+		rm ${INSTANCE}/results_$1${OUT}/BellmanValuesAllOUT.csv
 	fi
-	if [ -f "${INSTANCE}/results_$1$OUT/cuts.txt" ]; then
-		rm ${INSTANCE}/results_$1$OUT/cuts*.txt
+	if [ -f "${INSTANCE}/results_$1${OUT}/cuts.txt" ]; then
+		rm ${INSTANCE}/results_$1${OUT}/cuts*.txt
 	fi
-	if [ -f "${INSTANCE}/results_$1$OUT/visited_states.sddp.gsbmf" ]; then
-		rm ${INSTANCE}/results_$1$OUT/visited*
+	if [ -f "${INSTANCE}/results_$1${OUT}/visited_states.sddp.gsbmf" ]; then
+		rm ${INSTANCE}/results_$1${OUT}/visited*
 	fi
-	if [ -f "${INSTANCE}/results_$1$OUT/regressors.sddp.gsbmf" ]; then
-		rm ${INSTANCE}/results_$1$OUT/regressors*
+	if [ -f "${INSTANCE}/results_$1${OUT}/regressors.sddp.gsbmf" ]; then
+		rm ${INSTANCE}/results_$1${OUT}/regressors*
 	fi
 }
 
 function remove_previous_simulation_results() {
 	# remove previous simulation results
-	echo -e "${print_blue}        - if existing, remove previous simulation results in ${INSTANCE}/results_$1$OUT ${no_color}\n"
+	echo -e "${print_blue}        - if existing, remove previous simulation results in ${INSTANCE}/results_$1${OUT} ${no_color}\n"
 	for file in $outputs ; do
-	    if [ -d "${INSTANCE}/results_$1$OUT/$file" ]; then
-		    rm -rf ${INSTANCE}/results_$1$OUT/${file}
+	    if [ -d "${INSTANCE}/results_$1${OUT}/$file" ]; then
+		    rm -rf ${INSTANCE}/results_$1${OUT}/${file}
 		fi
 	done
-	if [ -d "${INSTANCE}/results_$1$OUT/MarginalCosts" ]; then
-	    rm -rf ${INSTANCE}/results_$1$OUT/MarginalCosts
+	if [ -d "${INSTANCE}/results_$1${OUT}/MarginalCosts" ]; then
+	    rm -rf ${INSTANCE}/results_$1${OUT}/MarginalCosts
 	fi
 }
 
 function remove_previous_investment_results() {
-	echo -e "${print_blue}        - if existing, remove previous investment results in ${INSTANCE}/results_invest$OUT ${no_color}\n"
-	if [ -f "${INSTANCE}/results_invest$OUT/Solution_OUT.csv" ]; then
-		echo -e "${print_blue}            - delete file ${INSTANCE}/results_invest$OUT/Solution_OUT.csv ${no_color}\n"
-		rm ${INSTANCE}/results_invest$OUT/Solution_OUT*.csv
+	echo -e "${print_blue}        - if existing, remove previous investment results in ${INSTANCE}/results_invest${OUT} ${no_color}\n"
+	if [ -f "${INSTANCE}/results_invest${OUT}/Solution_OUT.csv" ]; then
+		echo -e "${print_blue}            - delete file ${INSTANCE}/results_invest${OUT}/Solution_OUT.csv ${no_color}\n"
+		rm ${INSTANCE}/results_invest${OUT}/Solution_OUT*.csv
 	fi
-	if [ -f "${INSTANCE}/results_invest$OUT/investment_candidates.txt" ]; then
-		rm ${INSTANCE}/results_invest$OUT/investment_candidates.txt
+	if [ -f "${INSTANCE}/results_invest${OUT}/investment_candidates.txt" ]; then
+		rm ${INSTANCE}/results_invest${OUT}/investment_candidates.txt
 	fi
 	if [ "$CEMLOOP" = "CEMLOOP" ]; then
-		for file in ${INSTANCE}/results_invest$OUT/*_save_*.csv ; do	
+		for file in ${INSTANCE}/results_invest${OUT}/*_save_*.csv ; do	
 			if [ -f "$file" ]; then
 				rm file
 			fi
 		done
-		for file in ${INSTANCE}/results_simul$OUT/*_save_*.csv ; do	
+		for file in ${INSTANCE}/results_simul${OUT}/*_save_*.csv ; do	
 			if [ -f "$file" ]; then
 				rm file
 			fi
@@ -69,15 +143,15 @@ function remove_previous_investment_results() {
 }
 
 function remove_all_investment_results() {
-	echo -e "${print_blue}        - if existing, remove previous investment results in ${INSTANCE}/results_invest$OUT ${no_color}\n"
-	if [ -f "${INSTANCE}/results_invest$OUT/Solution_OUT.csv" ]; then
-		echo -e "${print_blue}            - delete file ${INSTANCE}/results_invest$OUT/Solution_OUT.csv ${no_color}\n"
-		rm ${INSTANCE}/results_invest$OUT/Solution_OUT*.csv
+	echo -e "${print_blue}        - if existing, remove previous investment results in ${INSTANCE}/results_invest${OUT} ${no_color}\n"
+	if [ -f "${INSTANCE}/results_invest${OUT}/Solution_OUT.csv" ]; then
+		echo -e "${print_blue}            - delete file ${INSTANCE}/results_invest${OUT}/Solution_OUT.csv ${no_color}\n"
+		rm ${INSTANCE}/results_invest${OUT}/Solution_OUT*.csv
 	fi
-	if [ -f "${INSTANCE}/results_invest$OUT/investment_candidates.txt" ]; then
-		rm ${INSTANCE}/results_invest$OUT/investment_candidates.txt
+	if [ -f "${INSTANCE}/results_invest${OUT}/investment_candidates.txt" ]; then
+		rm ${INSTANCE}/results_invest${OUT}/investment_candidates.txt
 	fi
-	for file in ${INSTANCE}/results_invest$OUT/*_save_*.csv ; do	
+	for file in ${INSTANCE}/results_invest${OUT}/*_save_*.csv ; do	
 		if [ -f "$file" ]; then
 			rm file
 		fi
@@ -116,61 +190,66 @@ function clean_csv() {
 
 function check_ssv_output() {
 	local mode=$1
-	echo -e "${print_blue}        - check if SSV results exist in ${INSTANCE}/results_$mode$OUT ${no_color}\n"
-	if [ -f "${INSTANCE}/results_$mode$OUT/BellmanValuesOUT.csv" ]; then
-		echo -e "${print_green}            - BellmanValuesOUT.csv found in results_$mode$OUT/ ${no_color}\n"
-		if [ -f "${INSTANCE}/results_$mode$OUT/bellmanvalues.csv" ]; then
-			rm ${INSTANCE}/results_$mode$OUT/bellmanvalues.csv
+	echo -e "${print_blue}        - check if SSV results exist in ${INSTANCE}/results_$mode${OUT} ${no_color}\n"
+	if [ -f "${INSTANCE}/results_$mode${OUT}/BellmanValuesOUT.csv" ]; then
+		echo -e "${print_green}            - BellmanValuesOUT.csv found in results_$mode${OUT}/ ${no_color}\n"
+		if [ -f "${INSTANCE}/results_$mode${OUT}/bellmanvalues.csv" ]; then
+			rm ${INSTANCE}/results_$mode${OUT}/bellmanvalues.csv
 		fi
-		cp ${INSTANCE}/results_$mode$OUT/BellmanValuesOUT.csv ${INSTANCE}/results_$mode$OUT/bellmanvalues.csv
+		cp ${INSTANCE}/results_$mode${OUT}/BellmanValuesOUT.csv ${INSTANCE}/results_$mode${OUT}/bellmanvalues.csv
 		return 0
-	elif [ -f "${INSTANCE}/results_$mode$OUT/cuts.txt" ]; then
-		echo -e "${print_green}            - cuts.txt found in results_$mode$OUT/ ${no_color}\n"
-		cp ${INSTANCE}/results_$mode$OUT/cuts.txt ${INSTANCE}/results_$mode$OUT/bellmanvalues.csv
+	elif [ -f "${INSTANCE}/results_$mode${OUT}/cuts.txt" ]; then
+		echo -e "${print_green}            - cuts.txt found in results_$mode${OUT}/ ${no_color}\n"
+		cp ${INSTANCE}/results_$mode${OUT}/cuts.txt ${INSTANCE}/results_$mode${OUT}/bellmanvalues.csv
 		return 0
 	else
-		echo -e "${print_red}            - None of BellmanValuesOUT.csv and cuts.txt is present in results_$mode$OUT/ ${no_color}\n"
+		echo -e "${print_red}            - None of BellmanValuesOUT.csv and cuts.txt is present in results_$mode${OUT}/ ${no_color}\n"
 		return 1
 	fi
 }
 
 function filter_cuts() {
 	local mode=$1
+	local group=$2
+	local suffix=""
+	if [ "$group" != "" ]; then 
+		suffix="_$group" 
+	fi
 	# bellman values may have been computed for more ssv timestpeps than required => remove them
-	LASTSTEP=$(ls -l ${INSTANCE}/nc4_$mode/Block*.nc4 | wc -l)
+	LASTSTEP=$(ls -l ${INSTANCE}/nc4_$mode$suffix/Block*.nc4 | wc -l)
 	echo -e "${print_blue}        - remove Bellman values after $LASTSTEP steps since they will not be used by the CEM ${no_color}\n"
-	awk -F, -v laststep="$LASTSTEP" 'NR==1 || $1 < laststep' "${INSTANCE}/results_$mode$OUT/bellmanvalues.csv" > "${INSTANCE}/results_$mode$OUT/temp.csv"
-	mv ${INSTANCE}/results_$mode$OUT/temp.csv ${INSTANCE}/results_$mode$OUT/bellmanvalues.csv
+	awk -F, -v laststep="$LASTSTEP" 'NR==1 || $1 < laststep' "${INSTANCE}/results_$mode${OUT}$suffix/bellmanvalues.csv" > "${INSTANCE}/results_$mode${OUT}$suffix/temp.csv"
+	mv ${INSTANCE}/results_$mode${OUT}$suffix/temp.csv ${INSTANCE}/results_$mode${OUT}$suffix/bellmanvalues.csv
  }
 
 function create_results_dir() {
-	echo -e "${print_blue}        - create results repo in ${INSTANCE}/results_$1$OUT ${no_color}\n"
+	echo -e "${print_blue}        - create results repo in ${INSTANCE}/results_$1${OUT} ${no_color}\n"
 	if [[ ! -d "${INSTANCE}/results_$1" ]] ; then
 		mkdir ${INSTANCE}/results_$1
 	fi
-	if [[ ! -z "$OUT" ]]; then
-		if [[ ! -d "${INSTANCE}/results_$1$OUT" ]] ; then
-			mkdir ${INSTANCE}/results_$1$OUT
+	if [[ ! -z "${OUT}" ]]; then
+		if [[ ! -d "${INSTANCE}/results_$1${OUT}" ]] ; then
+			mkdir ${INSTANCE}/results_$1${OUT}
 		fi
 	fi
 	if [ "$1"!="optim" ]; then
 	    for file in $outputs ; do
-			if [[ ! -d "${INSTANCE}/results_$1$OUT/$file" ]]; then
-					mkdir ${INSTANCE}/results_$1$OUT/$file
+			if [[ ! -d "${INSTANCE}/results_$1${OUT}/$file" ]]; then
+					mkdir ${INSTANCE}/results_$1${OUT}/$file
 			fi
 		done
-		if [[ ! -d "${INSTANCE}/results_$1$OUT/MarginalCosts" ]]; then
-			mkdir ${INSTANCE}/results_$1$OUT/MarginalCosts
+		if [[ ! -d "${INSTANCE}/results_$1${OUT}/MarginalCosts" ]]; then
+			mkdir ${INSTANCE}/results_$1${OUT}/MarginalCosts
 		fi
 	fi
 }
 
 function move_simul_results() {
-	echo -e "${print_blue}        - move results of simulation to ${INSTANCE}/results_$1$OUT  ${no_color}\n"
+	echo -e "${print_blue}        - move results of simulation to ${INSTANCE}/results_$1${OUT}  ${no_color}\n"
 	for file in $outputs ; do
-		mv ${INSTANCE}/results_$1$OUT/$file*.csv ${INSTANCE}/results_$1$OUT/$file/
+		mv ${INSTANCE}/results_$1${OUT}/$file*.csv ${INSTANCE}/results_$1${OUT}/$file/
 	done
-	mv ${INSTANCE}/results_$1$OUT/MarginalCost*.csv ${INSTANCE}/results_$1$OUT/MarginalCosts/
+	mv ${INSTANCE}/results_$1${OUT}/MarginalCost*.csv ${INSTANCE}/results_$1${OUT}/MarginalCosts/
 }
 
 function read_python_status {
@@ -186,25 +265,68 @@ function simulation_status {
 	else
 		NB_SCEN="${NBSCEN_SIM}"
 	fi
-	# Check outputs of simulation
-	for ((i=0; i<NB_SCEN; i++)); do
-		for rep in $outputs ; do
-			file="${INSTANCE}/results_${mode1}$OUT/${rep}/${rep}_Scen${i}_OUT.csv"
-			if [[ ! -f "$file" ]]; then
-				missing_files+=(${rep}_Scen${i})
+	
+	if [[ $groupsim -eq 1 && $onegroupsim -eq 1 ]]; then
+		BASE=$(( NBSCEN_SIM / sizegroupsim ))
+		RESTE=$(( NBSCEN_SIM % sizegroupsim ))
+		if [ $RESTE -ge 1 ]; then
+			nb_group_sim=$(( BASE + 1 ))
+		else	
+			nb_group_sim=$BASE
+		fi
+		current_first_scen=0
+		sizecurrentgroup=$sizegroupsim
+		number_remaining_scen=$NBSCEN_SIM
+		for ((grp=0; grp<$nb_group_sim; grp++)); do
+			if [ $number_remaining_scen -lt $sizegroupsim ] ; then
+				sizecurrentgroup=$number_remaining_scen
+			else
+				sizecurrentgroup=$sizegroupsim
+			fi
+			if [ $sizecurrentgroup -gt 0 ]; then
+				old_current_first_scen=$current_first_scen
+				current_first_scen=$(( old_current_first_scen + sizecurrentgroup ))
+				number_remaining_scen=$(( number_remaining_scen - sizecurrentgroup ))
 			fi
 		done
-		for rep in $MarginalCosts ; do
-			file="${INSTANCE}/results_${mode1}$OUT/MarginalCosts/${rep}_Scen${i}_OUT.csv"
-			if [[ ! -f "$file" ]]; then
-				missing_files+=(${rep}_Scen${i}) 
-			fi
+		last_scen=$(( current_first_scen + sizecurrentgroup ))
+		# Check outputs of simulation
+		for ((i=current_first_scen; i<last_scen; i++)); do
+			for rep in $outputs ; do
+				file="${INSTANCE}/results_${mode1}${OUT}/${rep}/${rep}_Scen${i}_OUT.csv"
+				if [[ ! -f "$file" ]]; then
+					missing_files+=(${rep}_Scen${i})
+				fi
+			done
+			for rep in $MarginalCosts ; do
+				file="${INSTANCE}/results_${mode1}${OUT}/MarginalCosts/${rep}_Scen${i}_OUT.csv"
+				if [[ ! -f "$file" ]]; then
+					missing_files+=(${rep}_Scen${i}) 
+				fi
+			done
 		done
-	done
+	
+	else	
+		# Check outputs of simulation
+		for ((i=0; i<NB_SCEN; i++)); do
+			for rep in $outputs ; do
+				file="${INSTANCE}/results_${mode1}${OUT}/${rep}/${rep}_Scen${i}_OUT.csv"
+				if [[ ! -f "$file" ]]; then
+					missing_files+=(${rep}_Scen${i})
+				fi
+			done
+			for rep in $MarginalCosts ; do
+				file="${INSTANCE}/results_${mode1}${OUT}/MarginalCosts/${rep}_Scen${i}_OUT.csv"
+				if [[ ! -f "$file" ]]; then
+					missing_files+=(${rep}_Scen${i}) 
+				fi
+			done
+		done
+	fi
 
 	if [ ${#missing_files[@]} -eq 0 ]; then
 		echo -e "${print_green}$(date +'%m/%d/%Y %H:%M:%S') - successfully ran SIM. ${no_color}"
-    	echo -e "${print_green} results available in ${INSTANCE}/results_$mode1$OUT ${no_color}"
+    	echo -e "${print_green} results available in ${INSTANCE}/results_$mode1${OUT} ${no_color}"
 		return 0
 	else
 		echo -e "${print_red}$(date +'%m/%d/%Y %H:%M:%S') - error while running SIM for scenarios ${missing_files[@]}.${no_color}"
@@ -299,20 +421,20 @@ function format_status {
 	fi
 	
 	# check InvestmentBlock.nc4
-	if [[ "$runtype" = "CEM" || "$runtype" = "SIM" || "$runtype" = "FORMAT" ]]; then
-		if [[ "$mode1" = "simul" || "mode1" = "invest" || "mode1" = "postinvest" ]]; then
-			if [ ! -f "${INSTANCE}/nc4_${mode1}/InvestmentBlock.nc4" ]; then
-				missing_files+=("InvestmentBlock")
-			fi
+																				 
+	if [[ "$mode1" = "simul" || "mode1" = "invest" || "mode1" = "postinvest" ]]; then
+		if [ ! -f "${INSTANCE}/nc4_${mode1}/InvestmentBlock.nc4" ]; then
+			missing_files+=("InvestmentBlock")
 		fi
 	fi
+   
 	
-	if [[ ! -f "${INSTANCE}/nc4_${mode1}${OUT}/SDDPBlock.nc4" ]]; then
+	if [[ ! -f "${INSTANCE}/nc4_${mode1}/SDDPBlock.nc4" ]]; then
 		missing_files+=("SDDPBlock")
 	fi
 	
 	for ((i=0; i<number_blocks; i++)); do
-		file="${INSTANCE}/nc4_${mode1}${OUT}/Block_${i}.nc4"
+		file="${INSTANCE}/nc4_${mode1}/Block_${i}.nc4"
 		if [[ ! -f "$file" ]]; then
 			missing_files+=("Block_${i}")
 		fi
@@ -320,7 +442,7 @@ function format_status {
 
 	if [ ${#missing_files[@]} -eq 0 ]; then
 		echo -e "${print_green}$(date +'%m/%d/%Y %H:%M:%S') - successfully ran FORMAT. ${no_color}"
-    	echo -e "${print_green} results available in ${INSTANCE}/nc4_${mode1}${OUT} ${no_color}"
+    	echo -e "${print_green} results available in ${INSTANCE}/nc4_$mode1 ${no_color}"
 		return 0
 	else
 	    echo -e "${print_red}$(date +'%m/%d/%Y %H:%M:%S') - error while running FORMAT ${missing_files[@]} in ${INSTANCE}/nc4_$mode1.${no_color}"
@@ -400,12 +522,12 @@ function update_yaml_param() {
 function sddp_status {
     if [[ -f "${INSTANCE}/results_${mode1}${OUT}/BellmanValuesOUT.csv" ]]; then
         echo -e "${print_green}$(date +'%m/%d/%Y %H:%M:%S') - successfully ran SSV with SDDP solver (convergence OK).${no_color}"
-    	echo -e "${print_green} results available in ${INSTANCE}/results_${mode1}$OUT ${no_color}"
+    	echo -e "${print_green} results available in ${INSTANCE}/results_${mode1}${OUT} ${no_color}"
 		return 0
 	else
         if [[ -f "${INSTANCE}/results_${mode1}${OUT}/cuts.txt" ]]; then
             echo -e "${print_orange}$(date +'%m/%d/%Y %H:%M:%S') - partially ran SSV with SDDP solver${no_color}${print_red} (no convergence).${no_color}"
-			echo -e "${print_orange} results available in ${INSTANCE}/results_${mode1}$OUT ${no_color}"
+			echo -e "${print_orange} results available in ${INSTANCE}/results_${mode1}${OUT} ${no_color}"
 			return 0
         else
             echo -e "${print_red}$(date +'%m/%d/%Y %H:%M:%S') - error while running sddp_solver.${no_color}"
@@ -417,7 +539,7 @@ function sddp_status {
 function investment_status {
     if [[ -f "${INSTANCE}/results_invest${OUT}/Solution_OUT.csv" ]]; then
         echo -e "${print_green}$(date +'%m/%d/%Y %H:%M:%S') - successfully ran CEM with investment_solver.${no_color}"
-		echo -e "${print_green} results available in ${INSTANCE}/results_${mode1}$OUT ${no_color}"
+		echo -e "${print_green} results available in ${INSTANCE}/results_${mode1}${OUT} ${no_color}"
 		return 0
 	else
         echo -e "${print_red}$(date +'%m/%d/%Y %H:%M:%S') - error while running CEM with investment_solver.${no_color}"
@@ -634,21 +756,21 @@ function update_scenarios() {
 function copy_ssv_output_from_to() {
 	from=$1
 	to=$2
-	if [[ ! -d ${INSTANCE}/results_$to$OUT ]]; then mkdir ${INSTANCE}/results_$to$OUT ; fi
-	if [ -f "${INSTANCE}/results_$from$OUT/BellmanValuesOUT.csv" ]; then
-		echo -e "${print_blue}        - BellmanValuesOUT.csv found in results_$from$OUT/ ${no_color}"
-		echo -e "${print_blue}        - copying to ${INSTANCE}/results_$to$OUT ${no_color}"
-		cp ${INSTANCE}/results_$from$OUT/BellmanValuesOUT.csv ${INSTANCE}/results_$to$OUT/BellmanValuesOUT.csv
-		cp ${INSTANCE}/results_$from$OUT/BellmanValuesOUT.csv ${INSTANCE}/results_$to$OUT/bellmanvalues.csv
+	if [[ ! -d ${INSTANCE}/results_$to${OUT} ]]; then mkdir ${INSTANCE}/results_$to${OUT} ; fi
+	if [ -f "${INSTANCE}/results_$from${OUT}/BellmanValuesOUT.csv" ]; then
+		echo -e "${print_blue}        - BellmanValuesOUT.csv found in results_$from${OUT}/ ${no_color}"
+		echo -e "${print_blue}        - copying to ${INSTANCE}/results_$to${OUT} ${no_color}"
+		cp ${INSTANCE}/results_$from${OUT}/BellmanValuesOUT.csv ${INSTANCE}/results_$to${OUT}/BellmanValuesOUT.csv
+		cp ${INSTANCE}/results_$from${OUT}/BellmanValuesOUT.csv ${INSTANCE}/results_$to${OUT}/bellmanvalues.csv
 		return 0
-	elif [ -f "${INSTANCE}/results_$from$OUT/cuts.txt" ]; then
-		echo -e "${print_blue}        - cuts.txt found in results_$from$OUT/ ${no_color}"
-		echo -e "${print_blue}        - copying to ${INSTANCE}/results_$to$OUT ${no_color}"
-		cp ${INSTANCE}/results_$from$OUT/cuts.txt ${INSTANCE}/results_$to$OUT/cuts.txt
-		cp ${INSTANCE}/results_$from$OUT/cuts.txt ${INSTANCE}/bellmanvalues.csv
+	elif [ -f "${INSTANCE}/results_$from${OUT}/cuts.txt" ]; then
+		echo -e "${print_blue}        - cuts.txt found in results_$from${OUT}/ ${no_color}"
+		echo -e "${print_blue}        - copying to ${INSTANCE}/results_$to${OUT} ${no_color}"
+		cp ${INSTANCE}/results_$from${OUT}/cuts.txt ${INSTANCE}/results_$to${OUT}/cuts.txt
+		cp ${INSTANCE}/results_$from${OUT}/cuts.txt ${INSTANCE}/bellmanvalues.csv
 		return 0
 	else		
-		echo -e "${print_red} - None of BellmanValuesOUT.csv and cuts.txt is present in results_$from$OUT/ ${no_color}"
+		echo -e "${print_red} - None of BellmanValuesOUT.csv and cuts.txt is present in results_$from${OUT}/ ${no_color}"
 		return 1
 	fi	
 }
