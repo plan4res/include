@@ -17,12 +17,12 @@ OMP_NUM_THREADS=$number_threads
 echo "TOTAL_NB_CPUS=$TOTAL_NB_CPUS; NBTASKS=$NBTASKS; N_CPUS_PER_TASK=$N_CPUS_PER_TASK"
  
 if check_param "${CONFIG}/sddp_solver.txt" "strDirOUT"; then
-	replace_param "${CONFIG}/sddp_solver.txt" "strDirOUT" "${INSTANCE}/results_${mode1}$OUT/"
-	echo -e "${print_blue}        - sddp_solver.txt config file : replaced param strDirOUT: ${INSTANCE}/results_${mode1}$OUT/.${no_color}" 
+	replace_param "${CONFIG}/sddp_solver.txt" "strDirOUT" "${INSTANCE}/results_${mode1}/${OUT}/"
+	echo -e "${print_blue}        - sddp_solver.txt config file : replaced param strDirOUT: ${INSTANCE}/results_${mode1}/${OUT}/.${no_color}" 
 else
 	increment_str_param_count "${CONFIG}/sddp_solver.txt"
-	add_str_param "${CONFIG}/sddp_solver.txt" "strDirOUT" "${INSTANCE}/results_${mode1}$OUT/"
-	echo -e "${print_blue}        - sddp_solver.txt config file : added param strDirOUT: ${INSTANCE}/results_${mode1}$OUT/.${no_color}" 
+	add_str_param "${CONFIG}/sddp_solver.txt" "strDirOUT" "${INSTANCE}/results_${mode1}/${OUT}/"
+	echo -e "${print_blue}        - sddp_solver.txt config file : added param strDirOUT: ${INSTANCE}/results_${mode1}/${OUT}/.${no_color}" 
 fi
 
 if check_param "${CONFIG}/sddp_solver.txt" "intNbSimulCheckForConv"; then
@@ -61,21 +61,17 @@ fi
 echo -e "\n${print_blue}    - Run SSV [$start_time] with sddp_solver to compute Bellman values for storages: ${no_color}"	
 
 local oldHOTSTART="$HOTSTART"
-if [ ! -f "${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt" ]; then
+if [ ! -f "${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/cuts.txt" ]; then
 	if [ "${HOTSTART}" = "HOTSTART" ]; then
-		echo -e "\n${print_orange}    - HOTSTART requested but not possible as ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt does not exist ${no_color}"
+		echo -e "\n${print_orange}    - HOTSTART requested but not possible as ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/cuts.txt does not exist ${no_color}"
 		oldHOTSTART="HOTSTART"
 		HOTSTART="" 
-	fi
-	
+	fi	
 fi
-
 											  
 P4R_CMD="srun  --wckey=${WCKEY} --nodes=${SLURM_JOB_NUM_NODES} --ntasks-per-node=${NTASKS_PER_NODE} --distribution=cyclic --cpus-per-task=${N_CPUS_PER_TASK} -l --mpi=pmix "
 
-
-if [[ ! $STEPS = 0 ]]; then
-	
+if [[ ! $STEPS = 0 ]]; then	
 	echo -e "\n${print_blue}    - Run SSV in 2 steps with max $NumberSSVIterationsFirstStep iterations, $NumberSSVForwardFirstStep Forward scenarios per iterations and convergence check each $CheckConvEachXIterInFirstStep iterations in first step  ${no_color}"	
 
 	# first step 
@@ -88,7 +84,7 @@ if [[ ! $STEPS = 0 ]]; then
 		increment_int_param_count "${CONFIG}/sddp_solver.txt"
 		add_int_param "${CONFIG}/sddp_solver.txt" "intNStepConv" "$ITERCONV"
 		echo -e "${print_blue}        - sddp_solver.txt config file : added param intNStepConv: $ITERCONV.${no_color}" 
-  fi
+	fi
 	
 	# update sddp_solver to run max $STEPS iterations
 	if check_param "${CONFIG}/sddp_solver.txt" "intMaxIter"; then
@@ -114,24 +110,21 @@ if [[ ! $STEPS = 0 ]]; then
 	# hotstart run is possible in 2 steps mode
 	if [ ! "$HOTSTART" = "" ]; then
 		# run in hotstart
-		echo -e "${print_blue}\n    - Running in HOTSTART mode using /results_${mode1}$OUT/cuts.txt${no_color}"
-		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}$OUT/ssv_out.txt
+		echo -e "${print_blue}\n    - Running in HOTSTART mode using /results_${mode1}/${OUT}/cuts.txt${no_color}"
+		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/ -l ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT}/ SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}/${OUT}/ssv_out.txt
 		wait
 																											  
-		SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt"| tail -n 1) 
+		SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "${INSTANCE}/results_${mode1}/${OUT}/ssv_out.txt"| tail -n 1) 
 
 	else	
-		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}$OUT/ssv_out.txt
+		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT}/ SDDPBlock.nc4 | tee ${INSTANCE}/results_${mode1}/${OUT}/ssv_out.txt
 		wait
-    SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "${INSTANCE}/results_${mode1}$OUT/ssv_out.txt"| tail -n 1) 
+    SSV_OUTPUT=$(grep -oP 'ACCURACY\s+\K[0-9.]+' "${INSTANCE}/results_${mode1}/${OUT}/ssv_out.txt"| tail -n 1) 
 	fi
     SSV_OUTPUT=$(printf "%06.4f" "$SSV_OUTPUT")
 																		 
-  echo -e "SSV_OUTPUT=$SSV_OUTPUT" 
+	echo -e "SSV_OUTPUT=$SSV_OUTPUT" 
   
-
-
-
 	if [[ ${SSV_OUTPUT} < $EpsilonSSV ]]; then
 		echo -e "${print_green}        - SSV reached optimality, no need for second step.${no_color}" 
 	else
@@ -155,8 +148,6 @@ if [[ ! $STEPS = 0 ]]; then
 			replace_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "500"
 			echo -e "${print_blue}        - successfully updated sddp_solver.txt config file : replaced value of intMaxIter by 500.${no_color}" 
 		fi
- 
-
       
 		if [[ ! -z "${NumberSSVForward}" ]]; then
 			replace_param "${CONFIG}/sddp_solver.txt" "intNbSimulForward" "$NumberSSVForward"
@@ -167,12 +158,12 @@ if [[ ! $STEPS = 0 ]]; then
 		fi
    
 		# run second step of sddp in hotstart mode
-		if [ -f "${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt" ]; then
-			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4"      
-			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4
+		if [ -f "${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/cuts.txt" ]; then
+			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/ -l ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/cuts.txt -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4"      
+			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/ -l ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT}/ SDDPBlock.nc4
 		else
-			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4"      
-			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4
+			echo -e "    time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/ -S ${CONFIG_IN_P4R}/sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4"      
+			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT}/ SDDPBlock.nc4
 		fi
   fi
 else	
@@ -192,9 +183,7 @@ else
 		add_int_param "${CONFIG}/sddp_solver.txt" "intMaxIter" "500"
 		echo -e "${print_blue}        - updated sddp_solver.txt config file : added intMaxIter: 500.${no_color}" 
 	fi
-      
-      
-      
+            
 	if check_param "${CONFIG}/sddp_solver.txt" "intNbSimulForward"; then
 		intNbSimulForward=$(get_param_value "intNbSimulForward" "${CONFIG}/sddp_solver.txt")
 		if [[ ! -z "${NumberSSVForward}" ]]; then
@@ -227,21 +216,12 @@ else
 		echo -e "${print_blue}        - updated sddp_solver.txt config file : added intNStepConv: 1.${no_color}" 
 	fi	
 
-
 	if [ "$HOTSTART" = "HOTSTART" ]; then
 		# run in hotstart
-		echo -e "${print_blue}\n    - Running in HOTSTART mode using /results_${mode1}$OUT/cuts.txt ${no_color}"
-		time ${P4R_ENV} sddp_solver -n ${OMP_NUM_THREADS} -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -l ${INSTANCE_IN_P4R}/results_${mode1}$OUT/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4
-	else
- 
- 
-
-	 
-	  
-	   
-	   
-		   
-		time ${P4R_ENV} sddp_solver -n ${OMP_NUM_THREADS} -d ${INSTANCE_IN_P4R}/results_${mode1}$OUT/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT} SDDPBlock.nc4  
+		echo -e "${print_blue}\n    - Running in HOTSTART mode using /results_${mode1}/${OUT}/cuts.txt ${no_color}"
+		time ${P4R_ENV} sddp_solver -n ${OMP_NUM_THREADS} -d ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/ -l ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/cuts.txt -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT}/ SDDPBlock.nc4
+	else   
+		time ${P4R_ENV} sddp_solver -n ${OMP_NUM_THREADS} -d ${INSTANCE_IN_P4R}/results_${mode1}/${OUT}/ -S sddp_solver.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_optim/${OUT}/ SDDPBlock.nc4  
 
 	fi
 fi

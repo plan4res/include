@@ -11,25 +11,25 @@ fi
 repos="IAMC OUT IMG Scenario*"
 for dir in $repos ; do
 	if [ -d "${INSTANCE}/results_${mode1}$OUT/$dir" ]; then
-		echo -e "\n${print_blue}        - delete dir ${INSTANCE}/results_${mode1}$OUT/${dir}${no_color}"
-		rm -rf ${INSTANCE}/results_${mode1}$OUT/${dir}
+		echo -e "\n${print_blue}        - delete dir ${INSTANCE}/results_${mode1}/$OUT/${dir}${no_color}"
+		rm -rf ${INSTANCE}/results_${mode1}/$OUT/${dir}
 	fi
 done
 
-for dir in ${INSTANCE}/results_${mode1}$OUT/Scenario*/; do
+for dir in ${INSTANCE}/results_${mode1}/$OUT/Scenario*/; do
     if [ -d "$dir" ]; then
-		echo -e "\n${print_blue}        - delete dirs ${INSTANCE}/results_${mode1}$OUT/Scenario*/${no_color}"
-        rm -rf ${INSTANCE}/results_${mode1}$OUT/Scenario*/
+		echo -e "\n${print_blue}        - delete dirs ${INSTANCE}/results_${mode1}/$OUT/Scenario*/${no_color}"
+        rm -rf ${INSTANCE}/results_${mode1}/$OUT/Scenario*/
     fi
 done
 
 if [ "${mode1}" == "simul" ]; then
-	update_yaml_param "${CONFIG}/settingsPostTreatPlan4res.yml" 1 "Resultsdir" "results_simul/"
 	update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" no
 elif [ "${mode1}" == "invest" ]; then
-	update_yaml_param "${CONFIG}/settingsPostTreatPlan4res.yml" 1 "Resultsdir" "results_invest/"
 	update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" yes
 fi
+update_yaml_param "${CONFIG}/settingsPostTreatPlan4res.yml" 1 "Resultsdir" "results_${mode1}/${OUT}/"
+update_yaml_param "${CONFIG}/settings_format_${mode1}.yml" 1 "inputDir" "csv_${mode1}/${OUT}/"
 
 P4R_CMD="srun --wckey=${WCKEY}  --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 -J Format --mpi=pmix -l"
 ${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/PostTreatPlan4res.py ${CONFIG_IN_P4R}/settingsPostTreatPlan4res.yml ${CONFIG_IN_P4R}/settings_format_${mode1}.yml ${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml ${DATASET}

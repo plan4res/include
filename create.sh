@@ -2,8 +2,8 @@
 
 source ${INCLUDE}/sh_utils.sh
 
-if [ -d "${INSTANCE}/csv_${mode1}${OUT}" ]; then
-	rm -rf ${INSTANCE}/csv_${mode1}${OUT}
+if [ -d "${INSTANCE}/csv_${mode1}/${OUT}" ]; then
+	rm -rf ${INSTANCE}/csv_${mode1}/${OUT}
 fi
 
 # run script to create plan4res input dataset (ZV_ZoneValues.csv ...)
@@ -13,6 +13,11 @@ if [ "${mode1}" == "simul" ]; then
     update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" no
 elif [ "${mode1}" == "invest" ]; then
     update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" yes
+fi
+if [[ ${OUT} != "" ]]; then
+    update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 1 "outputpath" "csv_${mode1}/${OUT}/"
+else
+    update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 1 "outputpath" "csv_${mode1}/"
 fi
 P4R_CMD="srun --wckey=${WCKEY}  --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 -J Format --mpi=pmix -l"
 ${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/CreateInputPlan4res.py ${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml ${DATASET}

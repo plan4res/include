@@ -22,12 +22,12 @@ if [[ ($onesim -eq 0) && ($groupsim -eq 0) && ($onegroupsim -eq 0) ]]; then
 	do
 		echo -e "\n${print_blue}     - run simulation at [$start_time] for scenario $indexsim ${no_color}"
 		P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${CPUS_PER_NODE} --mpi=pmix -l"
-		echo -e "${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul${OUT}/bellmanvalues.csv -s -i ${scen} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ SDDPBlock.nc4"
+		echo -e "${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul/${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul/${OUT}/bellmanvalues.csv -s -i ${scen} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/$OUT/ SDDPBlock.nc4"
 		if [ "$solver" = "HiGHS" ]; then
-			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul${OUT}/bellmanvalues.csv -s -i ${scen} -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ SDDPBlock.nc4
+			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul/${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul/${OUT}/bellmanvalues.csv -s -i ${scen} -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/${OUT}/ SDDPBlock.nc4
 
 		else
-			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul${OUT}/bellmanvalues.csv -s -i ${scen} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ SDDPBlock.nc4	
+			time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul/${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul/${OUT}/bellmanvalues.csv -s -i ${scen} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/${OUT}/ SDDPBlock.nc4	
 		fi
 		wait
 	done 
@@ -38,11 +38,11 @@ if [[ ($onesim -eq 1) && ($onegroupsim -eq 0) ]]; then
 	# run one simulation
 	echo -e "\n${print_blue}     - run simulation at [$start_time] for scenario $indexsim ${no_color}"
 	P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${CPUS_PER_NODE} --mpi=pmix -l"
-	echo -e "${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul${OUT}/bellmanvalues.csv -s -i ${indexsim} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ SDDPBlock.nc4"
+	echo -e "${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul/${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul/${OUT}/bellmanvalues.csv -s -i ${indexsim} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/$OUT/ SDDPBlock.nc4"
 	if [ "$solver" = "HiGHS" ]; then
-		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul${OUT}/bellmanvalues.csv -s -i ${indexsim} -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ SDDPBlock.nc4
+		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul/${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul/${OUT}/bellmanvalues.csv -s -i ${indexsim} -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/${OUT}/ SDDPBlock.nc4
 	else
-		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul${OUT}/bellmanvalues.csv -s -i ${indexsim} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/ SDDPBlock.nc4	
+		time ${P4R_ENV} sddp_solver -d ${INSTANCE_IN_P4R}/results_simul/${OUT}/ -l ${INSTANCE_IN_P4R}/results_simul/${OUT}/bellmanvalues.csv -s -i ${indexsim} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p ${INSTANCE_IN_P4R}/nc4_simul/${OUT}/ SDDPBlock.nc4	
 	fi
 	wait
 fi
@@ -50,7 +50,7 @@ if [[ ($groupsim -eq 1) && ($sizegroupsim -ge 1) && ($onegroupsim -eq 0) ]]; the
 	echo -e "\n${print_blue}     - run format and simulation at [$start_time] for groups of scenarios of size $sizegroupsim ${no_color}"
 	update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" no
 	if check_ssv_output "simul"; then 
-		cp ${INSTANCE}/results_${mode1}${OUT}/bellmanvalues.csv ${INSTANCE}/csv_${mode1}/
+		cp ${INSTANCE}/results_${mode1}/${OUT}/bellmanvalues.csv ${INSTANCE}/csv_${mode1}/${OUT}/
 	fi
 	# run groups of simulations in parallel
 	
@@ -77,34 +77,34 @@ if [[ ($groupsim -eq 1) && ($sizegroupsim -ge 1) && ($onegroupsim -eq 0) ]]; the
 
 		if [ $sizecurrentgroup -gt 0 ]; then
 			
-			create_format_settings_group "${CONFIG_IN_P4R}/settings_format_${mode1}.yml" "${INSTANCE_IN_P4R}/results_simul${OUT}/settings_format_${mode1}_$grp.yml" $grp $current_first_scen $sizecurrentgroup
+			create_format_settings_group "${CONFIG_IN_P4R}/settings_format_${mode1}.yml" "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$grp.yml" $grp $current_first_scen $sizecurrentgroup
 					
 			# create netcdf
-			if [[ ! -d "${INSTANCE_IN_P4R}/results_simul${OUT}_${grp}" ]]; then
-				mkdir "${INSTANCE_IN_P4R}/results_simul${OUT}_${grp}"
+			if [[ ! -d "${INSTANCE_IN_P4R}/results_simul/${OUT}_${grp}" ]]; then
+				mkdir "${INSTANCE_IN_P4R}/results_simul/${OUT}_${grp}"
 			fi
-			if [[ ! -d "${INSTANCE_IN_P4R}/nc4_simul_${grp}" ]]; then
-				mkdir "${INSTANCE_IN_P4R}/nc4_simul_${grp}"
+			if [[ ! -d "${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${grp}" ]]; then
+				mkdir "${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${grp}"
 			fi
 			echo -e "\n${print_blue}        - Create netcdf input files: ${no_color}${P4R_ENV} python -W ignore${PYTHONSCRIPTS_IN_P4R}/format.py ${CONFIG_IN_P4R}/settings_format_${mode1}_${grp}.yml ${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml ${DATASET} ${no_color}"
 
 			if [ "$FORMAT" = "FORMATGROUP" ]; then
 				P4R_CMD="srun --wckey=${WCKEY}  --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 -J Format --mpi=pmix -l"
-				cp ${INSTANCE}/results_${mode1}${OUT}/bellmanvalues.csv ${INSTANCE_IN_P4R}/results_simul${OUT}_${grp}/
-				${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/format.py "${INSTANCE_IN_P4R}/results_simul${OUT}/settings_format_${mode1}_$grp.yml" "${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml" ${DATASET} ${number_threads}
+				cp ${INSTANCE}/results_${mode1}/${OUT}/bellmanvalues.csv ${INSTANCE_IN_P4R}/results_simul/${OUT}_${grp}/
+				${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/format.py "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$grp.yml" "${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml" ${DATASET} ${number_threads}
 				wait
 			fi
 			filter_cuts "simul" "$grp"
 			
 			# run simulation 
-			if [[ -d "${INSTANCE_IN_P4R}/nc4_simul_${grp}" ]]; then 
+			if [[ -d "${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${grp}" ]]; then 
 				P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${CPUS_PER_NODE} --mpi=pmix -l"		
 				for (( scen=0; scen<$sizecurrentgroup; scen++ ))
 				do
 					if [ "$solver" = "HiGHS" ]; then
-						time ${P4R_ENV} sddp_solver -d "${INSTANCE_IN_P4R}/results_simul${OUT}_${grp}/" -l "${INSTANCE_IN_P4R}/results_simul${OUT}_${grp}/bellmanvalues.csv" -s -i ${scen} -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p "${INSTANCE_IN_P4R}/nc4_simul_${grp}/" SDDPBlock.nc4
+						time ${P4R_ENV} sddp_solver -d "${INSTANCE_IN_P4R}/results_simul/${OUT}_${grp}/" -l "${INSTANCE_IN_P4R}/results_simul/${OUT}_${grp}/bellmanvalues.csv" -s -i ${scen} -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p "${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${grp}/" SDDPBlock.nc4
 					else
-						time ${P4R_ENV} sddp_solver -d "${INSTANCE_IN_P4R}/results_simul${OUT}_${grp}/" -l "${INSTANCE_IN_P4R}/results_simul${OUT}_${grp}/bellmanvalues.csv" -s -i ${scen} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p "${INSTANCE_IN_P4R}/nc4_simul_${grp}/" SDDPBlock.nc4	
+						time ${P4R_ENV} sddp_solver -d "${INSTANCE_IN_P4R}/results_simul/${OUT}_${grp}/" -l "${INSTANCE_IN_P4R}/results_simul/${OUT}_${grp}/bellmanvalues.csv" -s -i ${scen} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p "${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${grp}/" SDDPBlock.nc4	
 					fi
 					wait
 				done
@@ -113,7 +113,7 @@ if [[ ($groupsim -eq 1) && ($sizegroupsim -ge 1) && ($onegroupsim -eq 0) ]]; the
 				# renumber scenarios
 				move_simul_results_group $grp $current_first_scen $sizecurrentgroup
 			else
-				echo -e "\n${print_red}        - ${INSTANCE_IN_P4R}/nc4_simul_${grp} does not exist, run with option -F ${no_color}"			
+				echo -e "\n${print_red}        - ${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${grp} does not exist, run with option -F ${no_color}"			
 			fi
 			old_current_first_scen=$current_first_scen
 			current_first_scen=$(( old_current_first_scen + sizecurrentgroup ))
@@ -127,7 +127,7 @@ if [[ ($onegroupsim -eq 1) ]]; then
 	echo -e "\n${print_blue}     - run format and simulation at [$start_time] for the group $numgroupsim of scenarios of size $sizegroupsim ${no_color}"
 	update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" no
 	if check_ssv_output "simul"; then 
-		cp ${INSTANCE}/results_${mode1}${OUT}/bellmanvalues.csv ${INSTANCE}/csv_${mode1}/
+		cp ${INSTANCE}/results_${mode1}/${OUT}/bellmanvalues.csv ${INSTANCE}/csv_${mode1}/${OUT}/
 	fi
 	# run groups of simulations in parallel
 	
@@ -157,34 +157,34 @@ if [[ ($onegroupsim -eq 1) ]]; then
 
 	if [ $sizecurrentgroup -gt 0 ]; then
 		
-		create_format_settings_group "${CONFIG_IN_P4R}/settings_format_${mode1}.yml" "${INSTANCE_IN_P4R}/results_simul${OUT}/settings_format_${mode1}_$numgroupsim.yml" $numgroupsim $current_first_scen $sizecurrentgroup
+		create_format_settings_group "${CONFIG_IN_P4R}/settings_format_${mode1}.yml" "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$numgroupsim.yml" $numgroupsim $current_first_scen $sizecurrentgroup
 				
 		# create netcdf
-		if [[ ! -d "${INSTANCE_IN_P4R}/results_simul${OUT}_${numgroupsim}" ]]; then
-			mkdir "${INSTANCE_IN_P4R}/results_simul${OUT}_${numgroupsim}"
+		if [[ ! -d "${INSTANCE_IN_P4R}/results_simul/${OUT}_${numgroupsim}" ]]; then
+			mkdir "${INSTANCE_IN_P4R}/results_simul/${OUT}_${numgroupsim}"
 		fi
-		if [[ ! -d "${INSTANCE_IN_P4R}/nc4_simul_${numgroupsim}" ]]; then
-			mkdir "${INSTANCE_IN_P4R}/nc4_simul_${numgroupsim}"
+		if [[ ! -d "${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${numgroupsim}" ]]; then
+			mkdir "${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${numgroupsim}"
 		fi
 
 		if [ "$FORMAT" = "FORMATGROUP" ]; then
 			echo -e "\n${print_blue}        - Create netcdf input files: ${no_color}${P4R_ENV} python -W ignore${PYTHONSCRIPTS_IN_P4R}/format.py ${CONFIG_IN_P4R}/settings_format_${mode1}_${numgroupsim}.yml ${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml ${DATASET}"
 			P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 -J Format --mpi=pmix -l"
-			cp ${INSTANCE}/results_${mode1}${OUT}/bellmanvalues.csv ${INSTANCE_IN_P4R}/results_simul${OUT}_${numgroupsim}/
-			${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/format.py "${INSTANCE_IN_P4R}/results_simul${OUT}/settings_format_${mode1}_$numgroupsim.yml" "${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml" ${DATASET} ${number_threads}
+			cp ${INSTANCE}/results_${mode1}/${OUT}/bellmanvalues.csv ${INSTANCE_IN_P4R}/results_simul/${OUT}_${numgroupsim}/
+			${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/format.py "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$numgroupsim.yml" "${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml" ${DATASET} ${number_threads}
 			wait
 		fi
 		filter_cuts "simul" "$numgroupsim"
 		
 		# run simulation 
-		if [[ -d "${INSTANCE_IN_P4R}/nc4_simul_${numgroupsim}" ]]; then 
+		if [[ -d "${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${numgroupsim}" ]]; then 
 			P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks-per-node=1 --cpus-per-task=${N_CPUS_PER_TASK} --mpi=pmix -l"					
 			for (( scen=0; scen<$sizecurrentgroup; scen++ ))
 			do
 				if [ "$solver" = "HiGHS" ]; then
-					time ${P4R_ENV} sddp_solver -d "${INSTANCE_IN_P4R}/results_simul${OUT}_${numgroupsim}/" -l "${INSTANCE_IN_P4R}/results_simul${OUT}_${numgroupsim}/bellmanvalues.csv" -s -i ${scen} -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p "${INSTANCE_IN_P4R}/nc4_simul_${numgroupsim}/" SDDPBlock.nc4
+					time ${P4R_ENV} sddp_solver -d "${INSTANCE_IN_P4R}/results_simul/${OUT}_${numgroupsim}/" -l "${INSTANCE_IN_P4R}/results_simul/${OUT}_${numgroupsim}/bellmanvalues.csv" -s -i ${scen} -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p "${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${numgroupsim}/" SDDPBlock.nc4
 				else
-					time ${P4R_ENV} sddp_solver -d "${INSTANCE_IN_P4R}/results_simul${OUT}_${numgroupsim}/" -l "${INSTANCE_IN_P4R}/results_simul${OUT}_${numgroupsim}/bellmanvalues.csv" -s -i ${scen} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p "${INSTANCE_IN_P4R}/nc4_simul_${numgroupsim}/" SDDPBlock.nc4	
+					time ${P4R_ENV} sddp_solver -d "${INSTANCE_IN_P4R}/results_simul/${OUT}_${numgroupsim}/" -l "${INSTANCE_IN_P4R}/results_simul/${OUT}_${numgroupsim}/bellmanvalues.csv" -s -i ${scen} -e uc_solverconfig.txt -S sddp_greedy.txt -c ${CONFIG_IN_P4R}/ -p "${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${numgroupsim}/" SDDPBlock.nc4	
 				fi
 				wait
 			done
@@ -194,7 +194,7 @@ if [[ ($onegroupsim -eq 1) ]]; then
 			move_simul_results_group $numgroupsim $current_first_scen $sizecurrentgroup
 			move_simul_results "simul"
 		else
-			echo -e "\n${print_red}        - ${INSTANCE_IN_P4R}/nc4_simul_${numgroupsim} does not exist, run with option -F ${no_color}"			
+			echo -e "\n${print_red}        - ${INSTANCE_IN_P4R}/nc4_simul/${OUT}_${numgroupsim} does not exist, run with option -F ${no_color}"			
 		fi
 	fi
 	

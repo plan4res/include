@@ -107,8 +107,8 @@ while true; do
 
     # Save file cuts.txt
 	echo -e "\n${print_blue}        - save cuts and Solution_OUT for iteration $iteration ${no_color}"
-    cp ${INSTANCE}/results_optim$OUT/cuts.txt ${INSTANCE}/results_optim$OUT/cuts_${index_scen}_${iteration}.txt
-    cp ${INSTANCE}/results_invest$OUT/Solution_OUT.csv ${INSTANCE}/results_invest$OUT/Solution_OUT_${index_scen}_${iteration}.csv
+    cp ${INSTANCE}/results_optim/$OUT/cuts.txt ${INSTANCE}/results_optim/$OUT/cuts_${index_scen}_${iteration}.txt
+    cp ${INSTANCE}/results_invest/$OUT/Solution_OUT.csv ${INSTANCE}/results_invest/$OUT/Solution_OUT_${index_scen}_${iteration}.csv
     
 	P4R_CMD="srun --wckey=${WCKEY} --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 --mpi=pmix -l"
 	case ${index_check_distance} in
@@ -255,7 +255,7 @@ number_threads=1
 mode1="postinvest"
 mode2="simul"
 source ${INCLUDE}/format.sh
-cp ${INSTANCE}/results_invest$OUT/Solution_ONES.csv ${INSTANCE}/results_invest$OUT/Solution_OUT.csv
+cp ${INSTANCE}/results_invest/$OUT/Solution_ONES.csv ${INSTANCE}/results_invest/$OUT/Solution_OUT.csv
 
 echo -e "\n${print_blue}    - launch post treat${no_color}"
 mode1="invest"
