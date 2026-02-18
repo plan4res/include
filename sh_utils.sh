@@ -455,15 +455,31 @@ function format_status {
 	fi
 }
 
+function add_yaml_param_level1() {
+	local file=$1
+	local key=$2
+	local value=$3
+	echo "adding key $key with value $value to $file"
+	echo "${key}: ${value}" >> "$file" 
+}
+
+function remove_yaml_param_level1() {
+	local file=$1
+	local key=$2
+	echo "removing row $key"
+	sed -i "/^$key/d" "$file"
+}
+
 function get_yaml_value_level1() {
 	local file=$1
 	local key=$2
-	while IFS= read -r line; do
-		trimmed_line=$(echo "$line" | sed 's/^[ \t]*//') # remove spaces and tabs at begin of line
+	while IFS= read -r line || [ -n "$line" ]; do
+		trimmed_line=$(echo "$line" | sed 's/^[ \t]*//')
+		[[ $trimmed_line =~ ^# ]] && continue
 		
 		# check if line does not start by # and contains the key
-		if [[ ! $trimmed_line =~ ^# ]] && [[ $trimmed_line == *"$key"* ]]; then
-			echo "$trimmed_line" | sed "s/.*$key: *//"
+		if [[ $trimmed_line =~ ^$key[[:space:]]*:[[:space:]]*(.*)$ ]]; then
+			echo "${BASH_REMATCH[1]}"
 			return
 		fi
 	done < "$file"
