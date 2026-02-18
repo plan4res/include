@@ -43,6 +43,23 @@ else
 	update_yaml_param "${CONFIG}/settings_format_${mode1}.yml" 1 "outputDir" "nc4_${mode1}/"
     update_yaml_param "${CONFIG}/settings_format_${mode1}.yml" 1 "inputDir" "csv_${mode2}/"
 fi
+
+ts=$(get_yaml_value_level1 "${CONFIG}/settings_format_${mode1}.yml" "timeseriespath")
+
+if [[ ${timeseries} != "" ]]; then
+	if [[ ${ts} != "" ]]; then
+		update_yaml_param "${CONFIG}/settings_format_${mode1}.yml" 1 "timeseriespath" "$timeseries"
+	else
+		add_yaml_param_level1 "${CONFIG}/settings_format_${mode1}.yml" "timeseriespath" "$timeseries"
+	fi
+	echo "Timeseries used: $timeseries"
+else
+	if [[ ${ts} != "" ]]; then
+		remove_yaml_param_level1 "${CONFIG}/settings_format_${mode1}.yml" "timeseriespath"
+	fi
+	echo "Timeseries used: $INSTANCE/TimeSeries"
+fi
+
 P4R_CMD="srun --wckey=${WCKEY}  --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 -J Format --mpi=pmix -l"
 ${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/format.py ${CONFIG_IN_P4R}/settings_format_${mode1}.yml ${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml ${DATASET} ${number_threads}
 
