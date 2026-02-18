@@ -42,7 +42,7 @@ echo "Local plan4res repo : $LOCAL_P4R_DIR"
 P4R_ENV="$P4R_DIR/bin/p4r"
 PYTHONSCRIPTS="${P4R_DIR}/scripts/python/plan4res-scripts"
 ADDONS="${P4R_DIR}/scripts/add-ons/install"
-GENESYS="${P4R_DIR}/scripts/add-ons/GENeSYS_MOD.jl"
+GENESYS="${P4R_DIR}/scripts/add-ons/GENeSYSMOD.jl"
 INCLUDE="$P4R_DIR/scripts/include"
 DATA="${LOCAL_P4R_DIR}/data"
 
@@ -97,6 +97,7 @@ fi
 mode1=""
 mode2=""
 OUT=""
+timeseries=""
 number_threads=1
 runtype=$1
 dataset=$2
