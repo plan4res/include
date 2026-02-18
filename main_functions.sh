@@ -31,7 +31,13 @@ function read_options() {
 # Reading options
 	while [[ "$#" -gt 0 ]]; do
 		case $1 in
-        	-M|--mode1) 				
+        	-T|--timeseries) 				
+				test_option $1 $2
+				test=$?
+				if [ $test -eq 0 ]; then timeseries="$2" ; shift; fi
+				shift
+				;;
+			-M|--mode1) 				
 				test_option $1 $2
 				test=$?
 				if [ $test -eq 0 ]; then mode1="$2" ; shift; fi
@@ -451,7 +457,9 @@ function show_help() {
 	echo "  	FORMAT: option1 can be: invest or simul (default: simul)"	
     echo "  -o [Dir] (or --out [Dir]) is optionnal ; Dir is the name of a subdir or dataset where results will be written"
 	echo "       -o is usable for SSV, CEM, SIM, SSVandSIM, SSVandCEM, POSTTREAT"
- 	echo "  -C or --create : in that case the dataset (csv files) will be created"
+    echo "  -T [Dir] (or --timeseries [Dir]) is optionnal ; Dir is the name of a subdir of data where Timeseries will be read"
+	echo "       -T is usable for FORMAT" 
+	echo "  -C or --create : in that case the dataset (csv files) will be created"
 	echo "       -C is usable for FORMAT, SSV, SIM, CEM, SSVandCEM, SSVandSIM, CEMloopSSV"
   	echo "  -F or --format : in that case the netcdf dataset for sms++ (csv files) will be created"
 	echo "       -F is usable for SSV, SIM, CEM (without option -L), (for SSVandCEM, SSVandSIM, CEM -L, creation of netcdf files is mandatory)"
