@@ -55,9 +55,9 @@ function create_format_settings_group() {
     ' "$settings" > "$settings_group"
 	
 	if [[ "$OUT" == "" ]]; then
-		sed -i "s|outputDir: 'nc4_simul/'|outputDir: 'nc4_simul/_${G}/'|g" "$settings_group"
+		update_yaml_param "$settings_group" 1 "outputDir" "nc4_simul/_${G}/"
 	else
-		sed -i "s|outputDir: 'nc4_simul/${OUT}/'|outputDir: 'nc4_simul/${OUT}_${G}/'|g" "$settings_group"
+		update_yaml_param "$settings_group" 1 "outputDir" "nc4_simul/${OUT}_${G}/"
 	fi
 }
 
