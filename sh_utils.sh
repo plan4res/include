@@ -511,6 +511,8 @@ function update_yaml_param() {
 	local new_value="$4"
 	local indent="${5:-4}"
 
+	echo "updating parameter $key_path with value $new_value in file $file"
+
 	# Convert keys in a table (the key must be given as a string with eg 3 words if it is a level 3 param"
 	IFS=' ' read -r -a keys <<< "$key_path"
 
