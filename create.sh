@@ -19,6 +19,24 @@ if [[ ${OUT} != "" ]]; then
 else
     update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 1 "outputpath" "csv_${mode1}/"
 fi
+
+if [[ ${timeseries} != "" ]]; then
+	if [[ ${ts} != "" ]]; then
+		echo "updating key timeseriespath with $timeseries"
+		update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 1 "timeseriespath" "$timeseries"
+	else
+		echo "adding key timeseriespath with value $timeseries"
+		add_yaml_param_level1 "${CONFIG}/settingsCreateInputPlan4res.yml" "timeseriespath" "$timeseries"
+	fi
+	echo "Timeseries used: $timeseries"
+else
+	if [[ ${ts} != "" ]]; then
+		echo "removing key timeseriespath"
+		remove_yaml_param_level1 "${CONFIG}/settingsCreateInputPlan4res.yml" "timeseriespath"
+	fi
+	echo "Timeseries used: $INSTANCE/TimeSeries"
+fi
+
 P4R_CMD="srun --wckey=${WCKEY}  --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 -J Format --mpi=pmix -l"
 ${P4R_ENV} python -W ignore ${PYTHONSCRIPTS_IN_P4R}/CreateInputPlan4res.py ${CONFIG_IN_P4R}/settingsCreateInputPlan4res.yml ${DATASET}
 python_script_return_status=$(read_python_status ${INSTANCE}/python_return_status)
