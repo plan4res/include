@@ -34,6 +34,12 @@ if [ "${mode2}" == "simul" ]; then
 elif [ "${mode2}" == "invest" ]; then
 	update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" yes
 fi
+
+# when formatting in simulation mode, always create InvestmentBlock
+if [[ "$runtype" == "FORMAT" && "$mode1" == "simul" ]]; then
+	update_yaml_param "${CONFIG}/settings_format_simul.yml" 1 "FormatMode" "INVESTandSDDPandUC"
+fi
+
 if [[ ${OUT} != "" ]]; then
     update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 1 "outputpath" "csv_${mode2}/${OUT}/"
     update_yaml_param "${CONFIG}/settings_format_${mode1}.yml" 1 "outputDir" "nc4_${mode1}/${OUT}/"
