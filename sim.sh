@@ -78,6 +78,22 @@ if [[ ($groupsim -eq 1) && ($sizegroupsim -ge 1) && ($onegroupsim -eq 0) ]]; the
 		if [ $sizecurrentgroup -gt 0 ]; then
 			
 			create_format_settings_group "${CONFIG_IN_P4R}/settings_format_${mode1}.yml" "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$grp.yml" $grp $current_first_scen $sizecurrentgroup
+			if [[ ${timeseries} != "" ]]; then
+				if [[ ${ts} != "" ]]; then
+					echo "updating key timeseriespath with $timeseries"
+					update_yaml_param "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$grp.yml" 1 "timeseriespath" "$timeseries"
+				else
+					echo "adding key timeseriespath with value $timeseries"
+					add_yaml_param_level1 "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$grp.yml" "timeseriespath" "$timeseries"
+				fi
+				echo "Timeseries used: $timeseries"
+			else
+				if [[ ${ts} != "" ]]; then
+					echo "removing key timeseriespath"
+					remove_yaml_param_level1 "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$grp.yml" "timeseriespath"
+				fi
+				echo "Timeseries used: $INSTANCE/TimeSeries"
+			fi
 					
 			# create netcdf
 			if [[ ! -d "${INSTANCE_IN_P4R}/results_simul/${OUT}_${grp}" ]]; then
@@ -158,7 +174,23 @@ if [[ ($onegroupsim -eq 1) ]]; then
 	if [ $sizecurrentgroup -gt 0 ]; then
 		
 		create_format_settings_group "${CONFIG_IN_P4R}/settings_format_${mode1}.yml" "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$numgroupsim.yml" $numgroupsim $current_first_scen $sizecurrentgroup
-				
+		if [[ ${timeseries} != "" ]]; then
+			if [[ ${ts} != "" ]]; then
+				echo "updating key timeseriespath with $timeseries"
+				update_yaml_param "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$grp.yml" 1 "timeseriespath" "$timeseries"
+			else
+				echo "adding key timeseriespath with value $timeseries"
+				add_yaml_param_level1 "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$grp.yml" "timeseriespath" "$timeseries"
+			fi
+			echo "Timeseries used: $timeseries"
+		else
+			if [[ ${ts} != "" ]]; then
+				echo "removing key timeseriespath"
+				remove_yaml_param_level1 "${INSTANCE_IN_P4R}/results_simul/${OUT}/settings_format_${mode1}_$grp.yml" "timeseriespath"
+			fi
+			echo "Timeseries used: $INSTANCE/TimeSeries"
+		fi
+		
 		# create netcdf
 		if [[ ! -d "${INSTANCE_IN_P4R}/results_simul/${OUT}_${numgroupsim}" ]]; then
 			mkdir "${INSTANCE_IN_P4R}/results_simul/${OUT}_${numgroupsim}"
