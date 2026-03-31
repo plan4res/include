@@ -9,19 +9,19 @@ if [ ! -d "${INSTANCE}/results_${mode1}$OUT" ]; then
 fi
 
 repos="IAMC OUT IMG Scenario*"
-for dir in $repos ; do
-	if [ -d "${INSTANCE}/results_${mode1}$OUT/$dir" ]; then
-		echo -e "\n${print_blue}        - delete dir ${INSTANCE}/results_${mode1}/$OUT/${dir}${no_color}"
-		rm -rf ${INSTANCE}/results_${mode1}/$OUT/${dir}
-	fi
-done
+# for dir in $repos ; do
+	# if [ -d "${INSTANCE}/results_${mode1}$OUT/$dir" ]; then
+		# echo -e "\n${print_blue}        - delete dir ${INSTANCE}/results_${mode1}/$OUT/${dir}${no_color}"
+		# rm -rf ${INSTANCE}/results_${mode1}/$OUT/${dir}
+	# fi
+# done
 
-for dir in ${INSTANCE}/results_${mode1}/$OUT/Scenario*/; do
-    if [ -d "$dir" ]; then
-		echo -e "\n${print_blue}        - delete dirs ${INSTANCE}/results_${mode1}/$OUT/Scenario*/${no_color}"
-        rm -rf ${INSTANCE}/results_${mode1}/$OUT/Scenario*/
-    fi
-done
+# for dir in ${INSTANCE}/results_${mode1}/$OUT/Scenario*/; do
+    # if [ -d "$dir" ]; then
+		# echo -e "\n${print_blue}        - delete dirs ${INSTANCE}/results_${mode1}/$OUT/Scenario*/${no_color}"
+        # rm -rf ${INSTANCE}/results_${mode1}/$OUT/Scenario*/
+    # fi
+# done
 
 if [ "${mode1}" == "simul" ]; then
 	update_yaml_param "${CONFIG}/settingsCreateInputPlan4res.yml" 2 "ParametersCreate invest" no
