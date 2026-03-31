@@ -10,11 +10,16 @@ if check_ssv_output "simul"; then
     echo -e "${print_grees}    - Bellman values found in ${INSTANCE}/results_simul${OUT}/ .${no_color}" 
 else
     if check_ssv_output "optim"; then 
-	ssv_output="optim"
-	copy_ssv_output_from_to "optim" "simul"
-	echo -e "${print_orange}    - No Bellman values found in ${INSTANCE}/results_simul${OUT}/ .${no_color}" 
-	echo -e "${print_orange}    - Using Bellman values from ${INSTANCE}/results_optim${OUT}/ .${no_color}" 
-    else
+		ssv_output="optim"
+		copy_ssv_output_from_to "optim" "simul"
+		echo -e "${print_orange}    - No Bellman values found in ${INSTANCE}/results_simul${OUT}/ .${no_color}" 
+		echo -e "${print_orange}    - Using Bellman values from ${INSTANCE}/results_optim${OUT}/ .${no_color}" 
+    elif check_ssv_output "simul"; then 
+		ssv_output="simul"
+		copy_ssv_output_from_to "simul" "invest"
+		echo -e "${print_orange}        - No Bellman values found in ${INSTANCE}/results_invest/$OUT/ .${no_color}" 
+		echo -e "${print_orange}        - Using Bellman values from ${INSTANCE}/results_simul/$OUT/ .${no_color}" 
+	else
        echo -e "${print_red}    - No Bellman values found in ${INSTANCE}/results_simul${OUT}/ nor $INSTANCE}/results_optim${OUT}/ .${no_color}" 
        return 1
     fi
